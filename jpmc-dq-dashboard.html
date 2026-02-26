@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JPMorgan Custody Holdings — DQ Exception Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0f172a;--bg2:rgba(30,41,59,.6);--bg3:rgba(30,41,59,.4);--card:#1e293b;--border:rgba(51,65,85,.5);--border2:rgba(51,65,85,.35);--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;--teal:#2dd4bf;--blue:#60a5fa;--indigo:#a5b4fc;--red:#f87171;--red2:#fca5a5;--amber:#fcd34d;--emerald:#34d399;--fuchsia:#e879f9;--orange:#fb923c;--font:'DM Sans',system-ui,sans-serif;--mono:'JetBrains Mono',monospace}
+html{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased}
+body{min-height:100vh}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#334155;border-radius:3px}
+button,select,input,textarea{font-family:inherit;font-size:inherit;color:inherit;outline:none}
+select option{background:#1e293b}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.header{border-bottom:1px solid var(--border);background:rgba(15,23,42,.95);backdrop-filter:blur(12px);position:sticky;top:0;z-index:30}
+.header-inner{max-width:1600px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.logo{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#14b8a6,#06b6d4);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0}
+.sep{width:1px;height:24px;background:var(--border);margin:0 4px}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--emerald);animation:pulse 2s infinite}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:500}
+.badge-src{background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.25);color:var(--blue)}
+.badge-dq{background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.25);color:var(--indigo)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:500;border:1px solid var(--border);background:var(--bg2);color:var(--text2);cursor:pointer;transition:all .15s}
+.btn:hover{color:#fff;border-color:rgba(71,85,105,.7)}
+.btn-sm{padding:4px 10px;font-size:11px}
+.btn-teal{background:rgba(20,184,166,.8);border-color:transparent;color:#fff}.btn-teal:hover{background:rgba(20,184,166,1)}
+.btn-blue{background:rgba(37,99,235,.8);border-color:transparent;color:#fff}
+.btn-red{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:var(--red)}
+.main{max-width:1600px;margin:0 auto;padding:24px}
+.stats{display:grid;grid-template-columns:repeat(8,1fr);gap:12px;margin-bottom:24px}
+.st{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;transition:border-color .15s}
+.st:hover{border-color:rgba(71,85,105,.6)}
+.st-lbl{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--text3)}
+.st-val{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
+.st-sub{font-size:11px;color:var(--text3);margin-top:3px}
+.tabs{display:flex;gap:4px;background:var(--bg3);border:1px solid var(--border2);border-radius:12px;padding:4px;margin-bottom:20px;width:fit-content}
+.tabs button{padding:8px 18px;border-radius:8px;font-size:13px;font-weight:500;background:transparent;border:none;color:var(--text3);cursor:pointer;transition:all .15s}
+.tabs button.active{background:rgba(51,65,85,.7);color:#fff}
+.fbar{background:var(--bg3);border:1px solid var(--border2);border-radius:12px;padding:14px;margin-bottom:20px;display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.finp{background:rgba(51,65,85,.35);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:#fff;font-size:13px;width:260px}
+.finp:focus{border-color:rgba(20,184,166,.5)}
+.fsel{background:rgba(51,65,85,.35);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:#fff;font-size:12px;cursor:pointer;-webkit-appearance:none}
+.sev{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.sev-critical{background:rgba(127,29,29,.3);color:var(--red2);border:1px solid rgba(185,28,28,.5)}
+.sev-high{background:rgba(120,53,15,.3);color:var(--amber);border:1px solid rgba(180,83,9,.5)}
+.sev-medium{background:rgba(12,74,110,.3);color:#7dd3fc;border:1px solid rgba(14,116,144,.5)}
+.sev-low{background:rgba(51,65,85,.4);color:var(--text2);border:1px solid rgba(71,85,105,.5)}
+.sts{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:500}
+.sts-Open{background:rgba(239,68,68,.15);color:var(--red)}
+.sts-InProgress{background:rgba(245,158,11,.15);color:var(--amber)}
+.sts-Escalated{background:rgba(217,70,239,.15);color:var(--fuchsia)}
+.sts-Resolved{background:rgba(16,185,129,.15);color:var(--emerald)}
+.sts-Closed{background:rgba(71,85,105,.3);color:var(--text3)}
+.twrap{background:rgba(30,41,59,.3);border:1px solid var(--border2);border-radius:12px;overflow:hidden}
+table{width:100%;border-collapse:collapse}
+th{padding:10px 14px;text-align:left;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);border-bottom:1px solid var(--border);background:rgba(15,23,42,.85);white-space:nowrap}
+th.sort{cursor:pointer;user-select:none}th.sort:hover{color:var(--text)}
+td{padding:10px 14px;border-bottom:1px solid rgba(51,65,85,.25);vertical-align:middle;font-size:13px}
+tbody tr{transition:background .1s;cursor:pointer;animation:fadeIn .2s ease-out}
+tbody tr:hover{background:rgba(51,65,85,.12)}
+.mono{font-family:var(--mono);font-size:12px}
+.dqr{position:relative;display:inline-flex;align-items:center;justify-content:center}
+.dqr svg{transform:rotate(-90deg)}
+.dqr-txt{position:absolute;font-weight:700;font-variant-numeric:tabular-nums}
+.so-bg{position:fixed;inset:0;z-index:40;display:flex;justify-content:flex-end}
+.so-dim{position:absolute;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px)}
+.so{position:relative;background:var(--card);border-left:1px solid var(--border);width:100%;max-width:580px;overflow-y:auto;box-shadow:-20px 0 40px rgba(0,0,0,.3);animation:slideIn .2s ease-out}
+.so-head{position:sticky;top:0;background:rgba(30,41,59,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:20px;z-index:10}
+.so-body{padding:20px;display:flex;flex-direction:column;gap:20px}
+.mg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ml{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text3)}
+.mv{color:#fff;font-size:13px;margin-top:2px}
+.detail-card{background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:16px}
+.detail-card h3{font-size:13px;font-weight:600;margin-bottom:14px;color:#fff}
+.ag{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
+.ac{background:var(--bg3);border:1px solid var(--border2);border-radius:12px;padding:20px}
+.at{font-weight:600;font-size:13px;margin-bottom:16px;color:#fff}
+.dim-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px}
+.dim-card{background:rgba(15,23,42,.4);border:1px solid rgba(51,65,85,.3);border-radius:10px;padding:16px;text-align:center}
+.dim-bar{margin-top:8px;height:4px;background:rgba(51,65,85,.4);border-radius:2px;overflow:hidden}
+.dim-fill{height:100%;border-radius:2px;transition:width .7s}
+.fund-panel{background:var(--bg3);border:1px solid var(--border2);border-radius:12px;overflow:hidden;margin-bottom:20px}
+.fund-hd{padding:16px 20px;border-bottom:1px solid var(--border2)}
+.fund-row{padding:14px 20px;display:flex;align-items:center;gap:16px;border-bottom:1px solid rgba(51,65,85,.2);cursor:pointer;transition:background .1s}
+.fund-row:last-child{border-bottom:none}
+.fund-row:hover{background:rgba(51,65,85,.15)}
+.rule-table{background:var(--bg3);border:1px solid var(--border2);border-radius:12px;overflow:hidden}
+.cmt{display:flex;gap:12px;margin-bottom:14px}
+.cmt-av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.bar-lbl{width:140px;font-size:12px;color:var(--text2);text-align:right;flex-shrink:0}
+.bar-bg{flex:1;height:22px;background:rgba(51,65,85,.3);border-radius:4px;overflow:hidden;position:relative}
+.bar-fg{height:100%;border-radius:4px;transition:width .7s}
+.bar-val{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:600;color:#fff}
+.board{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.board-col{background:var(--bg3);border:1px solid var(--border2);border-radius:12px;overflow:hidden}
+.board-hdr{padding:12px 16px;border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between}
+.board-cnt{font-size:11px;background:rgba(51,65,85,.5);padding:1px 8px;border-radius:99px;color:var(--text3)}
+.board-body{padding:10px;display:flex;flex-direction:column;gap:8px;min-height:100px}
+.bcard{background:rgba(15,23,42,.5);border:1px solid rgba(51,65,85,.3);border-radius:8px;padding:12px;cursor:pointer;transition:border-color .15s}
+.bcard:hover{border-color:rgba(71,85,105,.6)}
+.modal-bg{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center}
+.modal-dim{position:absolute;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px)}
+.modal{position:relative;background:var(--card);border:1px solid var(--border);border-radius:16px;width:100%;max-width:580px;max-height:85vh;overflow-y:auto;animation:fadeIn .2s}
+.modal-head{padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-body{padding:20px;display:flex;flex-direction:column;gap:16px}
+.fld{display:flex;flex-direction:column;gap:4px}
+.fld label{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);font-weight:500}
+.fld input,.fld select,.fld textarea{background:rgba(51,65,85,.35);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:#fff;font-size:13px}
+.fld textarea{resize:vertical;min-height:80px}
+.modal-foot{padding:16px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
+@media(max-width:1200px){.stats{grid-template-columns:repeat(4,1fr)}.dim-grid{grid-template-columns:repeat(3,1fr)}.ag{grid-template-columns:1fr}.board{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:768px){.stats{grid-template-columns:repeat(2,1fr)}.dim-grid{grid-template-columns:repeat(2,1fr)}.board{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ── Helpers ──
+function h(t,a,...c){const e=document.createElement(t);if(a)for(const[k,v]of Object.entries(a)){if(k==='style'&&typeof v==='object'){Object.assign(e.style,v);continue}if(k.startsWith('on')){e.addEventListener(k.slice(2).toLowerCase(),v);continue}if(k==='className'){e.className=v;continue}if(k==='htmlContent'){e.innerHTML=v;continue}e.setAttribute(k,v)}c.flat(Infinity).forEach(x=>{if(x==null||x===false)return;e.appendChild(typeof x==='object'?x:document.createTextNode(String(x)))});return e}
+function $(s,p){return(p||document).querySelector(s)}
+function fmt(n){return n==null?'—':typeof n==='number'?n.toLocaleString('en-US'):String(n)}
+function fmtUSD(n){return n==null?'—':'$'+n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}
+function dqColor(s){return s>=95?'var(--emerald)':s>=85?'var(--teal)':s>=70?'var(--amber)':'var(--red)'}
+function ring(score,size,stroke){
+  const r=(size-stroke)/2,c=2*Math.PI*r,off=c*(1-score/100);
+  return h('div',{className:'dqr',style:{width:size+'px',height:size+'px'}},
+    h('svg',{width:size,height:size},
+      h('circle',{cx:size/2,cy:size/2,r,fill:'none',stroke:'rgba(51,65,85,.4)','stroke-width':stroke}),
+      h('circle',{cx:size/2,cy:size/2,r,fill:'none',stroke:dqColor(score),'stroke-width':stroke,'stroke-dasharray':c,'stroke-dashoffset':off,'stroke-linecap':'round'})
+    ),
+    h('span',{className:'dqr-txt',style:{fontSize:(size<40?10:size<56?12:14)+'px',color:dqColor(score)}},Math.round(score))
+  )
+}
+// Make SVG elements properly
+const svgNS='http://www.w3.org/2000/svg';
+function ring2(score,size,stroke){
+  const r=(size-stroke)/2,c=2*Math.PI*r,off=c*(1-score/100);
+  const svg=document.createElementNS(svgNS,'svg');svg.setAttribute('width',size);svg.setAttribute('height',size);svg.style.transform='rotate(-90deg)';
+  const c1=document.createElementNS(svgNS,'circle');c1.setAttribute('cx',size/2);c1.setAttribute('cy',size/2);c1.setAttribute('r',r);c1.setAttribute('fill','none');c1.setAttribute('stroke','rgba(51,65,85,.4)');c1.setAttribute('stroke-width',stroke);
+  const c2=document.createElementNS(svgNS,'circle');c2.setAttribute('cx',size/2);c2.setAttribute('cy',size/2);c2.setAttribute('r',r);c2.setAttribute('fill','none');c2.setAttribute('stroke',dqColor(score));c2.setAttribute('stroke-width',stroke);c2.setAttribute('stroke-dasharray',c);c2.setAttribute('stroke-dashoffset',off);c2.setAttribute('stroke-linecap','round');
+  svg.appendChild(c1);svg.appendChild(c2);
+  const wrap=h('div',{className:'dqr',style:{width:size+'px',height:size+'px'}});
+  wrap.appendChild(svg);
+  wrap.appendChild(h('span',{className:'dqr-txt',style:{fontSize:(size<40?10:size<56?12:14)+'px',color:dqColor(score)}},Math.round(score)));
+  return wrap
+}
+
+// ── DATA — from actual JPMORGAN_CUSTODY_DAILY_HOLDINGS_v1.xlsx analysis ──
+const S={
+  reportDate:'2025-03-14', custodian:'JPMorgan Chase', reportType:'HOLDINGS', basis:'SETTLED',
+  masterAccounts:['Alpine Capital Partners LLC','Helvetia Asset Management AG'],
+  totalRecords:50, totalColumns:63, equityCount:36, fixedIncomeCount:14,
+  currencies:['USD','EUR','CHF','JPY','GBP'],
+  totalMvUSD: 79249597.14
+};
+
+// DQ dimension scores (computed from real data)
+const DQ={
+  completeness:100.0,
+  validity:100.0,
+  consistency:94.33,
+  uniqueness:100.0,
+  timeliness:100.0,
+  get overall(){return+(((this.completeness+this.validity+this.consistency+this.uniqueness+this.timeliness)/5).toFixed(2))}
+};
+
+// Fund-level data
+const FUNDS=[
+  {name:'Alpine Global Equity Fund',id:'JPMC-78501-001',ccy:'USD',isin:'LU0012345678',positions:12,mvUSD:16913234.03,equity:10,fi:2},
+  {name:'Alpine Fixed Income Fund',id:'JPMC-78501-002',ccy:'USD',isin:'LU0023456789',positions:10,mvUSD:18702002.06,equity:5,fi:5},
+  {name:'Alpine Balanced Strategy',id:'JPMC-78501-003',ccy:'EUR',isin:'IE00B1234567',positions:11,mvUSD:18446026.15,equity:7,fi:4},
+  {name:'Helvetia Growth Fund',id:'JPMC-78502-001',ccy:'USD',isin:'LU0034567890',positions:9,mvUSD:13783100.11,equity:5,fi:4},
+  {name:'Helvetia ESG Sustainable',id:'JPMC-78502-002',ccy:'EUR',isin:'IE00B2345678',positions:8,mvUSD:11405234.79,equity:6,fi:2}
+];
+
+// DQ Consistency rule details
+const DQ_RULES=[
+  {id:'CR-001',name:'MV = Qty × Price',dim:'Consistency',pass:36,fail:14,total:50,score:72.0,note:'Bond MV uses face value pricing (÷100), not raw qty × price'},
+  {id:'CR-002',name:'MV USD = MV Local × FX Rate',dim:'Consistency',pass:50,fail:0,total:50,score:100.0},
+  {id:'CR-003',name:'PnL = MV USD − Cost Basis USD',dim:'Consistency',pass:50,fail:0,total:50,score:100.0},
+  {id:'CR-004',name:'Qty Balance (Settled = Available)',dim:'Consistency',pass:47,fail:3,total:50,score:94.0,note:'3 positions have settled ≠ available with no pledge/loan'},
+  {id:'CR-005',name:'Price Ccy = Security Ccy',dim:'Consistency',pass:50,fail:0,total:50,score:100.0},
+  {id:'CR-006',name:'Country Risk = Country Incorporation',dim:'Consistency',pass:50,fail:0,total:50,score:100.0}
+];
+
+const DQ_VALIDITY_RULES=[
+  {id:'VR-001',name:'ISIN Format (ISO 6166)',pass:50,fail:0,total:50,score:100.0},
+  {id:'VR-002',name:'Date Format (ISO 8601)',pass:200,fail:0,total:200,score:100.0},
+  {id:'VR-003',name:'Currency Code (ISO 4217)',pass:150,fail:0,total:150,score:100.0},
+  {id:'VR-004',name:'Quantity ≥ 0',pass:100,fail:0,total:100,score:100.0},
+  {id:'VR-005',name:'Closing Price > 0',pass:50,fail:0,total:50,score:100.0},
+  {id:'VR-006',name:'FX Rate > 0',pass:50,fail:0,total:50,score:100.0}
+];
+
+// Exception data derived from real DQ analysis
+let nextId=1;
+function mkId(){return 'DQ-'+(4400+nextId++)}
+const NOW='2025-03-14T';
+const EXCEPTIONS=[
+  // 14 MV = Qty × Price failures (bonds priced per 100 face value)
+  {id:mkId(),title:'Bond MV mismatch: BUNDESREPUBLIK 0.25% 02/15/2029',isin:'DE0001102580',fund:'Alpine Fixed Income Fund',secType:'FIXED_INCOME',subtype:'GOVT_BOND',ccy:'EUR',rule:'CR-001',dim:'Consistency',sev:'high',status:'Open',
+   detail:'MV local 4,746,494.10 vs expected 474,649,410.00 — Bond priced per 100 face value. Qty 5,000,000 × Price 94.93 uses face value convention, not unit price.',
+   mvLocal:4746494.10,mvExpected:474649410.00,qty:5000000,price:94.929882,diffPct:99.0,
+   created:NOW+'08:15:00Z',updated:NOW+'08:15:00Z',assignee:null,jira:null,comments:[]},
+
+  {id:mkId(),title:'Bond MV mismatch: BANK OF AMERICA 3.95% 04/21/2029',isin:'US06051GJT22',fund:'Alpine Balanced Strategy',secType:'FIXED_INCOME',subtype:'CORP_BOND',ccy:'USD',rule:'CR-001',dim:'Consistency',sev:'high',status:'Open',
+   detail:'MV local 197,133.92 vs expected 19,713,391.60 — Bond face value pricing convention mismatch.',
+   mvLocal:197133.92,mvExpected:19713391.60,qty:200000,price:98.566958,diffPct:99.0,
+   created:NOW+'08:15:00Z',updated:NOW+'08:15:00Z',assignee:null,jira:null,comments:[]},
+
+  {id:mkId(),title:'Bond MV mismatch: US TREASURY 1.875% 02/15/2032',isin:'US912810TK83',fund:'Alpine Global Equity Fund',secType:'FIXED_INCOME',subtype:'GOVT_BOND',ccy:'USD',rule:'CR-001',dim:'Consistency',sev:'high',status:'Open',
+   detail:'MV local 1,911,311.88 vs expected 191,131,188.00 — Treasury bond face value pricing.',
+   mvLocal:1911311.88,mvExpected:191131188.00,qty:2000000,price:95.565594,diffPct:99.0,
+   created:NOW+'08:15:00Z',updated:NOW+'08:16:00Z',assignee:'Risk Ops',jira:null,comments:[]},
+
+  {id:mkId(),title:'Bond MV mismatch: BANK OF AMERICA 3.95% 04/21/2029',isin:'US06051GJT22',fund:'Alpine Fixed Income Fund',secType:'FIXED_INCOME',subtype:'CORP_BOND',ccy:'USD',rule:'CR-001',dim:'Consistency',sev:'high',status:'InProgress',
+   detail:'MV local 199,714.18 vs expected 19,971,418.40 — Duplicate ISIN cross-fund, same pricing convention issue.',
+   mvLocal:199714.18,mvExpected:19971418.40,qty:200000,price:99.857092,diffPct:99.0,
+   created:NOW+'08:15:00Z',updated:NOW+'09:30:00Z',assignee:'Data Eng',jira:'RECON-1042',comments:[
+     {user:'Data Eng',time:'09:30',text:'Investigating — this is the standard bond pricing convention where MV = face_value × price / 100. The rule needs adjustment for FIXED_INCOME types.'}
+   ]},
+
+  {id:mkId(),title:'Bond MV mismatch: US TREASURY 2.0% 11/15/2031',isin:'US912810SZ21',fund:'Alpine Fixed Income Fund',secType:'FIXED_INCOME',subtype:'GOVT_BOND',ccy:'USD',rule:'CR-001',dim:'Consistency',sev:'high',status:'InProgress',
+   detail:'MV local 96,995.34 vs expected 9,699,533.50 — Treasury bond, face value convention.',
+   mvLocal:96995.34,mvExpected:9699533.50,qty:100000,price:96.995335,diffPct:99.0,
+   created:NOW+'08:15:00Z',updated:NOW+'09:45:00Z',assignee:'Data Eng',jira:'RECON-1042',comments:[
+     {user:'Data Eng',time:'09:45',text:'Same root cause as DQ-4404. Rule CR-001 does not account for bond pricing convention. Linked to RECON-1042.'}
+   ]},
+
+  {id:mkId(),title:'Bond MV mismatch: US TREASURY 2.0% 11/15/2031',isin:'US912810SZ21',fund:'Helvetia Growth Fund',secType:'FIXED_INCOME',subtype:'GOVT_BOND',ccy:'USD',rule:'CR-001',dim:'Consistency',sev:'high',status:'Open',
+   detail:'MV local 982,340.58 vs expected 98,234,058.00 — Same treasury, different fund.',
+   mvLocal:982340.58,mvExpected:98234058.00,qty:1000000,price:98.234058,diffPct:99.0,
+   created:NOW+'08:16:00Z',updated:NOW+'08:16:00Z',assignee:null,jira:null,comments:[]},
+
+  {id:mkId(),title:'Bond MV mismatch: US TREASURY 1.875% 02/15/2032',isin:'US912810TK83',fund:'Helvetia Growth Fund',secType:'FIXED_INCOME',subtype:'GOVT_BOND',ccy:'USD',rule:'CR-001',dim:'Consistency',sev:'high',status:'Open',
+   detail:'MV local 475,264.34 vs expected 47,526,433.50.',
+   mvLocal:475264.34,mvExpected:47526433.50,qty:500000,price:95.052867,diffPct:99.0,
+   created:NOW+'08:16:00Z',updated:NOW+'08:16:00Z',assignee:null,jira:null,comments:[]},
+
+  {id:mkId(),title:'Bond MV mismatch: US TREASURY 1.875% 02/15/2032',isin:'US912810TK83',fund:'Alpine Fixed Income Fund',secType:'FIXED_INCOME',subtype:'GOVT_BOND',ccy:'USD',rule:'CR-001',dim:'Consistency',sev:'high',status:'Open',
+   detail:'MV local 1,902,881.48 vs expected 190,288,148.00.',
+   mvLocal:1902881.48,mvExpected:190288148.00,qty:2000000,price:95.144074,diffPct:99.0,
+   created:NOW+'08:16:00Z',updated:NOW+'08:16:00Z',assignee:null,jira:null,comments:[]},
+
+  {id:mkId(),title:'Bond MV mismatch: BUNDESREPUBLIK 0.25% 02/15/2029',isin:'DE0001102580',fund:'Alpine Balanced Strategy',secType:'FIXED_INCOME',subtype:'GOVT_BOND',ccy:'EUR',rule:'CR-001',dim:'Consistency',sev:'high',status:'Open',
+   detail:'MV local 960,862.69 vs expected 96,086,269.00.',
+   mvLocal:960862.69,mvExpected:96086269.00,qty:1000000,price:96.086269,diffPct:99.0,
+   created:NOW+'08:16:00Z',updated:NOW+'08:16:00Z',assignee:null,jira:null,comments:[]},
+
+  {id:mkId(),title:'Bond MV mismatch: JPMORGAN CHASE 4.25% 10/01/2027',isin:'US46625HRL59',fund:'Helvetia Growth Fund',secType:'FIXED_INCOME',subtype:'CORP_BOND',ccy:'USD',rule:'CR-001',dim:'Consistency',sev:'high',status:'Open',
+   detail:'MV local 1,024,908.56 vs expected 102,490,856.00.',
+   mvLocal:1024908.56,mvExpected:102490856.00,qty:1000000,price:102.490856,diffPct:99.0,
+   created:NOW+'08:17:00Z',updated:NOW+'08:17:00Z',assignee:null,jira:null,comments:[]},
+
+  {id:mkId(),title:'Bond MV mismatch: UK GILT 1.625% 10/22/2028',isin:'GB00BDRHNP05',fund:'Helvetia ESG Sustainable',secType:'FIXED_INCOME',subtype:'GOVT_BOND',ccy:'GBP',rule:'CR-001',dim:'Consistency',sev:'high',status:'Escalated',
+   detail:'MV local 4,842,602.60 vs expected 484,260,260.00 — GBP-denominated gilt, same bond pricing convention issue. Large notional.',
+   mvLocal:4842602.60,mvExpected:484260260.00,qty:5000000,price:96.852052,diffPct:99.0,
+   created:NOW+'08:17:00Z',updated:NOW+'10:00:00Z',assignee:'Fund Ops',jira:'RECON-1043',comments:[
+     {user:'DQ Engine',time:'08:30',text:'🔴 AI Anomaly Detection: Large notional GBP position with 99% deviation. Priority review recommended.'},
+     {user:'Fund Ops',time:'10:00',text:'Escalating — GBP 5M notional position affecting NAV calculation for Helvetia ESG fund. Confirmed same root cause as other bond MV exceptions.'}
+   ]},
+
+  {id:mkId(),title:'Bond MV mismatch: UK GILT 1.625% 10/22/2028',isin:'GB00BDRHNP05',fund:'Helvetia Growth Fund',secType:'FIXED_INCOME',subtype:'GOVT_BOND',ccy:'GBP',rule:'CR-001',dim:'Consistency',sev:'high',status:'Open',
+   detail:'MV local 482,243.53 vs expected 48,224,353.00.',
+   mvLocal:482243.53,mvExpected:48224353.00,qty:500000,price:96.448706,diffPct:99.0,
+   created:NOW+'08:17:00Z',updated:NOW+'08:17:00Z',assignee:null,jira:null,comments:[]},
+
+  {id:mkId(),title:'Bond MV mismatch: UBS AG 1.75% 09/20/2028',isin:'XS2010028699',fund:'Helvetia Growth Fund',secType:'FIXED_INCOME',subtype:'CORP_BOND',ccy:'EUR',rule:'CR-001',dim:'Consistency',sev:'high',status:'Open',
+   detail:'MV local 197,695.40 vs expected 19,769,539.80.',
+   mvLocal:197695.40,mvExpected:19769539.80,qty:200000,price:98.847699,diffPct:99.0,
+   created:NOW+'08:17:00Z',updated:NOW+'08:17:00Z',assignee:null,jira:null,comments:[]},
+
+  {id:mkId(),title:'Bond MV mismatch: BUNDESREPUBLIK 0.25% 02/15/2029',isin:'DE0001102580',fund:'Helvetia ESG Sustainable',secType:'FIXED_INCOME',subtype:'GOVT_BOND',ccy:'EUR',rule:'CR-001',dim:'Consistency',sev:'high',status:'Open',
+   detail:'MV local 1,891,383.40 vs expected 189,138,340.00.',
+   mvLocal:1891383.40,mvExpected:189138340.00,qty:2000000,price:94.569170,diffPct:99.0,
+   created:NOW+'08:17:00Z',updated:NOW+'08:17:00Z',assignee:null,jira:null,comments:[]},
+
+  // 3 Quantity Balance failures
+  {id:mkId(),title:'Qty balance: JOHNSON & JOHNSON',isin:'US4781601046',fund:'Alpine Fixed Income Fund',secType:'EQUITY',subtype:'COMMON_STOCK',ccy:'USD',rule:'CR-004',dim:'Consistency',sev:'low',status:'Open',
+   detail:'Settled qty 15,000 ≠ Available qty 14,639 with zero pledged and zero on-loan. Difference of 361 shares unaccounted.',
+   settled:15000,available:14639,diff:361,
+   created:NOW+'08:18:00Z',updated:NOW+'08:18:00Z',assignee:null,jira:null,comments:[]},
+
+  {id:mkId(),title:'Qty balance: NESTLE SA',isin:'CH0038863350',fund:'Alpine Global Equity Fund',secType:'EQUITY',subtype:'COMMON_STOCK',ccy:'CHF',rule:'CR-004',dim:'Consistency',sev:'low',status:'Open',
+   detail:'Settled qty 500 ≠ Available qty 147 with zero pledged and zero on-loan. Difference of 353 shares unaccounted.',
+   settled:500,available:147,diff:353,
+   created:NOW+'08:18:00Z',updated:NOW+'08:18:00Z',assignee:null,jira:null,comments:[]},
+
+  {id:mkId(),title:'Qty balance: ROCHE HOLDING AG',isin:'CH0012032048',fund:'Alpine Global Equity Fund',secType:'EQUITY',subtype:'COMMON_STOCK',ccy:'CHF',rule:'CR-004',dim:'Consistency',sev:'low',status:'Open',
+   detail:'Settled qty 1,500 ≠ Available qty 1,281 with zero pledged and zero on-loan. Difference of 219 shares unaccounted.',
+   settled:1500,available:1281,diff:219,
+   created:NOW+'08:18:00Z',updated:NOW+'08:18:00Z',assignee:null,jira:null,comments:[]}
+];
+
+// ── STATE ──
+const state={
+  tab:'exceptions', // exceptions | monitoring | analytics
+  view:'table',
+  sort:{col:'sev',dir:'desc'},
+  filters:{search:'',sev:'all',status:'all',fund:'all',dim:'all',rule:'all'},
+  detail:null,
+  jiraModal:null,
+  expandedRules:{}
+};
+
+// ── Severity order for sorting ──
+const sevOrder={critical:4,high:3,medium:2,low:1};
+
+// ── RENDER ──
+function render(){
+  const app=$('#app');app.innerHTML='';
+  app.appendChild(renderHeader());
+  const main=h('div',{className:'main'});
+  main.appendChild(renderStats());
+  main.appendChild(renderTabs());
+  if(state.tab==='exceptions'){
+    main.appendChild(renderFilters());
+    if(state.view==='table') main.appendChild(renderTable());
+    else main.appendChild(renderBoard());
+  } else if(state.tab==='monitoring'){
+    main.appendChild(renderMonitoring());
+  } else {
+    main.appendChild(renderAnalytics());
+  }
+  app.appendChild(main);
+  if(state.detail!=null) app.appendChild(renderDetail(state.detail));
+  if(state.jiraModal!=null) app.appendChild(renderJiraModal(state.jiraModal));
+}
+
+function renderHeader(){
+  return h('header',{className:'header'},
+    h('div',{className:'header-inner'},
+      h('div',{style:{display:'flex',alignItems:'center',gap:'12px'}},
+        h('div',{className:'logo'},'DQ'),
+        h('div',null,
+          h('div',{style:{fontWeight:700,fontSize:'15px'}},'JPMorgan Custody Holdings'),
+          h('div',{style:{color:'var(--text3)',fontSize:'12px'}},S.reportDate+' · Daily · Settled Basis')
+        )
+      ),
+      h('div',{style:{display:'flex',alignItems:'center',gap:'10px',flexWrap:'wrap'}},
+        h('span',{className:'badge badge-src'},h('span',{className:'live-dot'}),'JPMC Custody'),
+        h('span',{className:'badge badge-dq'},h('span',{className:'live-dot'}),'DQ Engine'),
+        h('div',{className:'sep'}),
+        h('div',{style:{display:'flex',alignItems:'center',gap:'6px',fontSize:'12px',color:'var(--text3)'}},
+          fmt(S.totalRecords)+' positions · '+fmt(S.totalColumns)+' fields · '+S.currencies.join(', ')
+        )
+      )
+    )
+  )
+}
+
+function renderStats(){
+  const exc=EXCEPTIONS;
+  const open=exc.filter(e=>e.status==='Open').length;
+  const high=exc.filter(e=>e.sev==='high'||e.sev==='critical').length;
+  const esc=exc.filter(e=>e.status==='Escalated').length;
+  const jira=exc.filter(e=>e.jira).length;
+  const unassigned=exc.filter(e=>!e.assignee).length;
+  const bondExc=exc.filter(e=>e.rule==='CR-001').length;
+  const qtyExc=exc.filter(e=>e.rule==='CR-004').length;
+  const cards=[
+    ['Total',exc.length,'var(--text)','📋'],
+    ['Open',open,'var(--red)','🔓'],
+    ['High / Critical',high,'var(--amber)','⚠️'],
+    ['Escalated',esc,'var(--fuchsia)','🔺'],
+    ['JIRA Linked',jira,'var(--blue)','🔗','of '+exc.length],
+    ['Unassigned',unassigned,'var(--orange)','👤'],
+    ['Bond MV (CR-001)',bondExc,'var(--amber)','📐'],
+    ['Qty Balance (CR-004)',qtyExc,'var(--teal)','⚖️']
+  ];
+  const grid=h('div',{className:'stats'});
+  cards.forEach(([lbl,val,col,ico,sub])=>{
+    grid.appendChild(h('div',{className:'st'},
+      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'start'}},
+        h('div',null,
+          h('div',{className:'st-lbl'},lbl),
+          h('div',{className:'st-val',style:{color:col}},fmt(val))
+        ),
+        h('span',{style:{fontSize:'18px'}},ico)
+      ),
+      sub?h('div',{className:'st-sub'},sub):null
+    ))
+  });
+  return grid
+}
+
+function renderTabs(){
+  const wrap=h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'12px',marginBottom:'20px'}});
+  const tabs=h('div',{className:'tabs'});
+  ['exceptions','monitoring','analytics'].forEach(t=>{
+    const lbl=t==='exceptions'?'Exceptions ('+EXCEPTIONS.length+')':t==='monitoring'?'DQ Monitoring':'Analytics';
+    tabs.appendChild(h('button',{className:state.tab===t?'active':'',onClick:()=>{state.tab=t;render()}},lbl))
+  });
+  wrap.appendChild(tabs);
+  if(state.tab==='exceptions'){
+    const vt=h('div',{style:{display:'flex',gap:'6px'}});
+    ['table','board'].forEach(v=>{
+      vt.appendChild(h('button',{className:'btn btn-sm'+(state.view===v?' btn-teal':''),onClick:()=>{state.view=v;render()}},v==='table'?'☰ Table':'▦ Board'))
+    });
+    wrap.appendChild(vt)
+  }
+  return wrap
+}
+
+function getFiltered(){
+  let data=[...EXCEPTIONS];
+  const f=state.filters;
+  if(f.search){const q=f.search.toLowerCase();data=data.filter(e=>e.title.toLowerCase().includes(q)||e.isin.toLowerCase().includes(q)||e.id.toLowerCase().includes(q)||e.fund.toLowerCase().includes(q))}
+  if(f.sev!=='all') data=data.filter(e=>e.sev===f.sev);
+  if(f.status!=='all') data=data.filter(e=>e.status===f.status);
+  if(f.fund!=='all') data=data.filter(e=>e.fund===f.fund);
+  if(f.rule!=='all') data=data.filter(e=>e.rule===f.rule);
+  const s=state.sort;
+  data.sort((a,b)=>{
+    let va,vb;
+    if(s.col==='sev'){va=sevOrder[a.sev]||0;vb=sevOrder[b.sev]||0}
+    else if(s.col==='updated'){va=a.updated;vb=b.updated}
+    else if(s.col==='fund'){va=a.fund;vb=b.fund}
+    else if(s.col==='rule'){va=a.rule;vb=b.rule}
+    else{va=a[s.col];vb=b[s.col]}
+    if(va<vb)return s.dir==='asc'?-1:1;if(va>vb)return s.dir==='asc'?1:-1;return 0
+  });
+  return data
+}
+
+function renderFilters(){
+  const bar=h('div',{className:'fbar'});
+  const inp=h('input',{className:'finp',type:'text',placeholder:'Search exceptions, ISIN, fund…',value:state.filters.search});
+  inp.addEventListener('input',e=>{state.filters.search=e.target.value;render()});
+  bar.appendChild(inp);
+
+  const mkSel=(label,key,opts)=>{
+    const sel=h('select',{className:'fsel'});
+    sel.appendChild(h('option',{value:'all'},label+': All'));
+    opts.forEach(([v,l])=>sel.appendChild(h('option',{value:v},l)));
+    sel.value=state.filters[key];
+    sel.addEventListener('change',e=>{state.filters[key]=e.target.value;render()});
+    return sel
+  };
+  bar.appendChild(mkSel('Severity','sev',[['high','High'],['medium','Medium'],['low','Low']]));
+  bar.appendChild(mkSel('Status','status',[['Open','Open'],['InProgress','In Progress'],['Escalated','Escalated'],['Resolved','Resolved']]));
+  bar.appendChild(mkSel('Fund','fund',FUNDS.map(f=>[f.name,f.name])));
+  bar.appendChild(mkSel('Rule','rule',[['CR-001','CR-001: MV = Qty × Price'],['CR-004','CR-004: Qty Balance']]));
+
+  const cnt=h('div',{style:{marginLeft:'auto',fontSize:'12px',color:'var(--text3)'}},getFiltered().length+' of '+EXCEPTIONS.length+' exceptions');
+  bar.appendChild(cnt);
+  return bar
+}
+
+function sortBy(col){
+  if(state.sort.col===col) state.sort.dir=state.sort.dir==='desc'?'asc':'desc';
+  else{state.sort={col,dir:'desc'}}
+  render()
+}
+
+function renderTable(){
+  const data=getFiltered();
+  const wrap=h('div',{className:'twrap'});
+  const tbl=h('table');
+  const arrow=col=>state.sort.col===col?(state.sort.dir==='desc'?' ↓':' ↑'):'';
+  const thead=h('thead',null,h('tr',null,
+    h('th',{style:{width:'90px'}},'ID'),
+    h('th',{className:'sort',onClick:()=>sortBy('sev')},'Severity'+arrow('sev')),
+    h('th',null,'Exception'),
+    h('th',null,'ISIN'),
+    h('th',{className:'sort',onClick:()=>sortBy('fund')},'Fund'+arrow('fund')),
+    h('th',{className:'sort',onClick:()=>sortBy('rule')},'Rule'+arrow('rule')),
+    h('th',null,'Status'),
+    h('th',null,'Assignee'),
+    h('th',null,'JIRA'),
+    h('th',{className:'sort',onClick:()=>sortBy('updated')},'Updated'+arrow('updated'))
+  ));
+  tbl.appendChild(thead);
+  const tbody=h('tbody');
+  data.forEach(e=>{
+    const tr=h('tr',{onClick:()=>{state.detail=e;render()}},
+      h('td',null,h('span',{className:'mono',style:{color:'var(--teal)'}},e.id)),
+      h('td',null,h('span',{className:'sev sev-'+e.sev},e.sev)),
+      h('td',{style:{maxWidth:'280px'}},
+        h('div',{style:{fontWeight:500,color:'#fff',fontSize:'13px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},e.title),
+        h('div',{style:{fontSize:'11px',color:'var(--text3)',marginTop:'2px'}},e.secType+' · '+e.subtype)
+      ),
+      h('td',null,h('span',{className:'mono',style:{fontSize:'11px'}},e.isin)),
+      h('td',{style:{fontSize:'12px'}},e.fund.replace('Alpine ','A.').replace('Helvetia ','H.')),
+      h('td',null,h('span',{className:'mono',style:{fontSize:'11px',color:'var(--indigo)'}},e.rule)),
+      h('td',null,h('span',{className:'sts sts-'+e.status},e.status==='InProgress'?'In Progress':e.status)),
+      h('td',{style:{fontSize:'12px',color:e.assignee?'var(--text)':'var(--text3)'}},e.assignee||'—'),
+      h('td',null,e.jira?h('span',{className:'mono',style:{fontSize:'11px',color:'var(--blue)'}},e.jira):h('span',{style:{color:'var(--text3)'}},'—')),
+      h('td',{style:{fontSize:'12px',color:'var(--text3)',whiteSpace:'nowrap'}},e.updated.replace(NOW,'').replace('Z',''))
+    );
+    tbody.appendChild(tr)
+  });
+  tbl.appendChild(tbody);
+  wrap.appendChild(tbl);
+  return wrap
+}
+
+function renderBoard(){
+  const data=getFiltered();
+  const cols=['Open','InProgress','Escalated','Resolved'];
+  const labels={Open:'Open',InProgress:'In Progress',Escalated:'Escalated',Resolved:'Resolved'};
+  const colors={Open:'var(--red)',InProgress:'var(--amber)',Escalated:'var(--fuchsia)',Resolved:'var(--emerald)'};
+  const grid=h('div',{className:'board'});
+  cols.forEach(st=>{
+    const items=data.filter(e=>e.status===st);
+    const col=h('div',{className:'board-col'},
+      h('div',{className:'board-hdr'},
+        h('span',{style:{fontWeight:600,fontSize:'13px',color:colors[st]}},labels[st]),
+        h('span',{className:'board-cnt'},items.length)
+      ),
+      h('div',{className:'board-body'},
+        ...items.map(e=>h('div',{className:'bcard',onClick:()=>{state.detail=e;render()}},
+          h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'start',marginBottom:'6px'}},
+            h('span',{className:'mono',style:{fontSize:'11px',color:'var(--teal)'}},e.id),
+            h('span',{className:'sev sev-'+e.sev},e.sev)
+          ),
+          h('div',{style:{fontWeight:500,fontSize:'12px',color:'#fff',marginBottom:'4px'}},e.title.substring(0,50)+'…'),
+          h('div',{style:{fontSize:'11px',color:'var(--text3)'}},e.fund.split(' ').slice(-2).join(' ')+' · '+e.isin)
+        ))
+      )
+    );
+    grid.appendChild(col)
+  });
+  return grid
+}
+
+function renderDetail(exc){
+  const bg=h('div',{className:'so-bg'});
+  bg.appendChild(h('div',{className:'so-dim',onClick:()=>{state.detail=null;render()}}));
+  const so=h('div',{className:'so'});
+
+  // Header
+  const head=h('div',{className:'so-head'},
+    h('div',{style:{display:'flex',alignItems:'start',justifyContent:'space-between'}},
+      h('div',null,
+        h('div',{style:{display:'flex',alignItems:'center',gap:'8px',marginBottom:'4px'}},
+          h('span',{className:'mono',style:{color:'var(--teal)',fontSize:'14px',fontWeight:600}},exc.id),
+          h('span',{className:'sev sev-'+exc.sev},exc.sev),
+          h('span',{className:'sts sts-'+exc.status},exc.status==='InProgress'?'In Progress':exc.status)
+        ),
+        h('div',{style:{fontWeight:600,fontSize:'14px',color:'#fff'}},exc.title)
+      ),
+      h('button',{className:'btn btn-sm',onClick:()=>{state.detail=null;render()}},'✕')
+    )
+  );
+  so.appendChild(head);
+
+  const body=h('div',{className:'so-body'});
+
+  // Metadata grid
+  const grid=h('div',{className:'mg'});
+  [['ISIN',exc.isin],['Fund',exc.fund],['Security Type',exc.secType+' / '+exc.subtype],['Currency',exc.ccy],
+   ['DQ Rule',exc.rule],['DQ Dimension',exc.dim],['Assignee',exc.assignee||'Unassigned'],['JIRA',exc.jira||'Not linked']
+  ].forEach(([l,v])=>{
+    grid.appendChild(h('div',null,h('div',{className:'ml'},l),h('div',{className:'mv'},v)))
+  });
+  body.appendChild(grid);
+
+  // Detail description
+  const dcard=h('div',{className:'detail-card'});
+  dcard.appendChild(h('h3',null,'Exception Detail'));
+  dcard.appendChild(h('div',{style:{fontSize:'13px',lineHeight:'1.6',color:'var(--text2)'}},exc.detail));
+
+  // For bond MV exceptions, show calculation
+  if(exc.rule==='CR-001'&&exc.mvLocal!=null){
+    const calcBox=h('div',{style:{marginTop:'14px',background:'rgba(15,23,42,.5)',border:'1px solid var(--border2)',borderRadius:'8px',padding:'14px'}});
+    calcBox.appendChild(h('div',{style:{fontSize:'11px',fontWeight:600,textTransform:'uppercase',letterSpacing:'.04em',color:'var(--text3)',marginBottom:'8px'}},'Calculation Breakdown'));
+    const rows=[
+      ['Face Value / Qty',fmt(exc.qty)],
+      ['Clean Price (per 100)',exc.price?.toFixed(6)],
+      ['Expected (Qty × Price)',fmtUSD(Math.round(exc.mvExpected))],
+      ['Actual MV Local',fmtUSD(Math.round(exc.mvLocal))],
+      ['Correct MV (Qty × Price ÷ 100)',fmtUSD(Math.round(exc.qty*exc.price/100))],
+      ['Deviation',exc.diffPct+'%']
+    ];
+    rows.forEach(([k,v])=>{
+      calcBox.appendChild(h('div',{style:{display:'flex',justifyContent:'space-between',padding:'4px 0',fontSize:'12px'}},
+        h('span',{style:{color:'var(--text3)'}},k),
+        h('span',{className:'mono',style:{color:k==='Deviation'?'var(--amber)':'#fff'}},v)
+      ))
+    });
+    // Verdict
+    const correctMV=Math.round(exc.qty*exc.price/100);
+    const matchesActual=Math.abs(correctMV-Math.round(exc.mvLocal))<2;
+    calcBox.appendChild(h('div',{style:{marginTop:'8px',padding:'8px 10px',background:matchesActual?'rgba(16,185,129,.1)':'rgba(239,68,68,.1)',border:'1px solid '+(matchesActual?'rgba(16,185,129,.3)':'rgba(239,68,68,.3)'),borderRadius:'6px',fontSize:'12px',color:matchesActual?'var(--emerald)':'var(--red)'}},
+      matchesActual?'✓ Actual MV matches bond convention (face × price ÷ 100). Rule CR-001 needs bond-aware logic.':'✗ MV does not match either convention. Manual review required.'
+    ));
+    dcard.appendChild(calcBox)
+  }
+
+  // Qty balance detail
+  if(exc.rule==='CR-004'&&exc.settled!=null){
+    const calcBox=h('div',{style:{marginTop:'14px',background:'rgba(15,23,42,.5)',border:'1px solid var(--border2)',borderRadius:'8px',padding:'14px'}});
+    calcBox.appendChild(h('div',{style:{fontSize:'11px',fontWeight:600,textTransform:'uppercase',letterSpacing:'.04em',color:'var(--text3)',marginBottom:'8px'}},'Quantity Breakdown'));
+    [['Settled Qty',fmt(exc.settled)],['Available Qty',fmt(exc.available)],['Pledged','0'],['On Loan','0'],['Unaccounted Difference',fmt(exc.diff)+' shares']].forEach(([k,v])=>{
+      calcBox.appendChild(h('div',{style:{display:'flex',justifyContent:'space-between',padding:'4px 0',fontSize:'12px'}},
+        h('span',{style:{color:'var(--text3)'}},k),
+        h('span',{className:'mono',style:{color:k.includes('Difference')?'var(--amber)':'#fff'}},v)
+      ))
+    });
+    dcard.appendChild(calcBox)
+  }
+  body.appendChild(dcard);
+
+  // Actions
+  const actions=h('div',{style:{display:'flex',gap:'8px',flexWrap:'wrap'}});
+  const statuses=['Open','InProgress','Escalated','Resolved','Closed'];
+  const statusSel=h('select',{className:'fsel',style:{flex:'1'}});
+  statuses.forEach(s=>statusSel.appendChild(h('option',{value:s},s==='InProgress'?'In Progress':s)));
+  statusSel.value=exc.status;
+  statusSel.addEventListener('change',e=>{exc.status=e.target.value;exc.updated=new Date().toISOString();render()});
+  actions.appendChild(statusSel);
+  actions.appendChild(h('button',{className:'btn btn-blue',onClick:()=>{state.detail=null;state.jiraModal=exc;render()}},'🔗 Create JIRA'));
+  body.appendChild(actions);
+
+  // Comments
+  const cmtSection=h('div');
+  cmtSection.appendChild(h('div',{style:{fontSize:'13px',fontWeight:600,color:'#fff',marginBottom:'12px'}},'Activity ('+exc.comments.length+')'));
+  exc.comments.forEach(c=>{
+    const isAI=c.user==='DQ Engine';
+    cmtSection.appendChild(h('div',{className:'cmt'},
+      h('div',{className:'cmt-av',style:{background:isAI?'rgba(139,92,246,.2)':'rgba(59,130,246,.2)',color:isAI?'var(--indigo)':'var(--blue)'}},isAI?'AI':c.user[0]),
+      h('div',{style:{flex:1}},
+        h('div',{style:{display:'flex',gap:'8px',alignItems:'baseline',marginBottom:'4px'}},
+          h('span',{style:{fontWeight:600,fontSize:'12px'}},c.user),
+          h('span',{style:{fontSize:'11px',color:'var(--text3)'}},c.time)
+        ),
+        h('div',{style:{fontSize:'13px',color:'var(--text2)',lineHeight:'1.5'}},c.text)
+      )
+    ))
+  });
+  // Add comment
+  const cmtBox=h('div',{style:{display:'flex',gap:'8px'}});
+  const cmtInp=h('input',{className:'finp',style:{flex:1,width:'auto'},placeholder:'Add a comment…'});
+  cmtBox.appendChild(cmtInp);
+  cmtBox.appendChild(h('button',{className:'btn btn-teal',onClick:()=>{
+    const v=cmtInp.value.trim();if(!v)return;
+    exc.comments.push({user:'You',time:new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}),text:v});
+    exc.updated=new Date().toISOString();render()
+  }},'Send'));
+  cmtSection.appendChild(cmtBox);
+  body.appendChild(cmtSection);
+
+  so.appendChild(body);
+  bg.appendChild(so);
+  return bg
+}
+
+function renderJiraModal(exc){
+  const bg=h('div',{className:'modal-bg'});
+  bg.appendChild(h('div',{className:'modal-dim',onClick:()=>{state.jiraModal=null;render()}}));
+  const modal=h('div',{className:'modal'});
+  modal.appendChild(h('div',{className:'modal-head'},
+    h('div',{style:{fontWeight:600,fontSize:'15px'}},'Create JIRA Ticket'),
+    h('button',{className:'btn btn-sm',onClick:()=>{state.jiraModal=null;render()}},'✕')
+  ));
+  const body=h('div',{className:'modal-body'});
+  const fields=[
+    ['Project','RECON'],
+    ['Issue Type','Bug'],
+    ['Summary','[DQ] '+exc.title],
+    ['Priority',exc.sev==='high'||exc.sev==='critical'?'High':'Medium'],
+    ['Labels','dq-exception, custody, '+exc.dim.toLowerCase()],
+    ['Component','JPMorgan Custody'],
+    ['DQ Rule',exc.rule+' ('+exc.dim+')']
+  ];
+  fields.forEach(([lbl,val])=>{
+    const fld=h('div',{className:'fld'});
+    fld.appendChild(h('label',null,lbl));
+    fld.appendChild(h('input',{type:'text',value:val,readOnly:true}));
+    body.appendChild(fld)
+  });
+  const descFld=h('div',{className:'fld'});
+  descFld.appendChild(h('label',null,'Description'));
+  descFld.appendChild(h('textarea',null,
+    'DQ Exception '+exc.id+' — '+exc.fund+'\n\n'+
+    'ISIN: '+exc.isin+'\nSecurity: '+exc.title.replace(/^Bond MV mismatch: |^Qty balance: /,'')+'\n\n'+
+    exc.detail
+  ));
+  body.appendChild(descFld);
+
+  // DQ Rule Traceability
+  const trace=h('div',{className:'detail-card'});
+  trace.appendChild(h('h3',null,'DQ Rule Traceability'));
+  [['Exception ID',exc.id],['DQ Rule',exc.rule],['DQ Dimension',exc.dim],['Data Source','JPMC Custody Holdings'],['Report Date',S.reportDate]].forEach(([k,v])=>{
+    trace.appendChild(h('div',{style:{display:'flex',justifyContent:'space-between',padding:'3px 0',fontSize:'12px'}},
+      h('span',{style:{color:'var(--text3)'}},k),h('span',{style:{color:'#fff'}},v)
+    ))
+  });
+  body.appendChild(trace);
+  modal.appendChild(body);
+  modal.appendChild(h('div',{className:'modal-foot'},
+    h('button',{className:'btn',onClick:()=>{state.jiraModal=null;render()}},'Cancel'),
+    h('button',{className:'btn btn-blue',onClick:()=>{
+      const ticket='RECON-'+(1044+Math.floor(Math.random()*50));
+      exc.jira=ticket;
+      exc.comments.push({user:'JIRA',time:new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}),text:'Ticket '+ticket+' created and linked.'});
+      state.jiraModal=null;render()
+    }},'Create Ticket')
+  ));
+  bg.appendChild(modal);
+  return bg
+}
+
+// ── MONITORING TAB ──
+function renderMonitoring(){
+  const wrap=h('div');
+
+  // Overall DQ Score header
+  const scoreHdr=h('div',{style:{display:'flex',alignItems:'center',gap:'24px',marginBottom:'24px',background:'var(--bg3)',border:'1px solid var(--border2)',borderRadius:'14px',padding:'24px'}});
+  scoreHdr.appendChild(ring2(DQ.overall,80,6));
+  const scoreInfo=h('div');
+  scoreInfo.appendChild(h('div',{style:{fontSize:'20px',fontWeight:700,color:'#fff'}},'Overall DQ Score: '+DQ.overall.toFixed(1)+'%'));
+  scoreInfo.appendChild(h('div',{style:{fontSize:'13px',color:'var(--text2)',marginTop:'4px'}},
+    S.totalRecords+' positions · '+S.totalColumns+' fields · '+EXCEPTIONS.length+' exceptions detected'
+  ));
+  scoreInfo.appendChild(h('div',{style:{fontSize:'12px',color:'var(--text3)',marginTop:'4px'}},
+    'Report: '+S.reportDate+' · Custodian: '+S.custodian+' · Basis: '+S.basis
+  ));
+  scoreHdr.appendChild(scoreInfo);
+  wrap.appendChild(scoreHdr);
+
+  // Dimension scores
+  const dims=[
+    {name:'Completeness',score:DQ.completeness,icon:'📊',desc:'All 63 fields populated (FI-only fields scoped to Fixed Income rows)'},
+    {name:'Validity',score:DQ.validity,icon:'✓',desc:'ISIN, dates, currencies, quantities, prices all pass format checks'},
+    {name:'Consistency',score:DQ.consistency,icon:'⚙️',desc:'14 bond MV mismatches (pricing convention), 3 qty balance breaks'},
+    {name:'Uniqueness',score:DQ.uniqueness,icon:'🔑',desc:'No duplicate report IDs, position keys, or tax lot IDs'},
+    {name:'Timeliness',score:DQ.timeliness,icon:'⏱',desc:'All price dates and report dates match position date'}
+  ];
+  const dimGrid=h('div',{className:'dim-grid'});
+  dims.forEach(d=>{
+    const card=h('div',{className:'dim-card'});
+    card.appendChild(ring2(d.score,56,4));
+    card.appendChild(h('div',{style:{fontWeight:600,fontSize:'12px',marginTop:'8px',color:'#fff'}},d.name));
+    card.appendChild(h('div',{style:{fontSize:'11px',color:'var(--text3)',marginTop:'4px',lineHeight:'1.4'}},d.desc));
+    const bar=h('div',{className:'dim-bar'});
+    bar.appendChild(h('div',{className:'dim-fill',style:{width:d.score+'%',background:dqColor(d.score)}}));
+    card.appendChild(bar);
+    dimGrid.appendChild(card)
+  });
+  wrap.appendChild(dimGrid);
+
+  // Fund breakdown
+  const fundPanel=h('div',{className:'fund-panel'});
+  fundPanel.appendChild(h('div',{className:'fund-hd'},
+    h('div',{style:{fontWeight:600,fontSize:'14px',color:'#fff'}},'Portfolio Breakdown'),
+    h('div',{style:{fontSize:'12px',color:'var(--text3)',marginTop:'2px'}},'5 sub-accounts across 2 master accounts · Total AUM '+fmtUSD(Math.round(S.totalMvUSD)))
+  ));
+  FUNDS.forEach(f=>{
+    const excCount=EXCEPTIONS.filter(e=>e.fund===f.name).length;
+    const row=h('div',{className:'fund-row'},
+      h('div',{style:{flex:1}},
+        h('div',{style:{fontWeight:600,fontSize:'13px',color:'#fff'}},f.name),
+        h('div',{style:{fontSize:'11px',color:'var(--text3)',marginTop:'2px'}},f.id+' · '+f.ccy+' · '+f.isin)
+      ),
+      h('div',{style:{textAlign:'center',minWidth:'60px'}},
+        h('div',{style:{fontSize:'16px',fontWeight:700,color:'var(--text)'}},f.positions),
+        h('div',{style:{fontSize:'10px',color:'var(--text3)'}},'positions')
+      ),
+      h('div',{style:{textAlign:'center',minWidth:'80px'}},
+        h('div',{style:{fontSize:'14px',fontWeight:600,color:'var(--teal)'}},fmtUSD(Math.round(f.mvUSD))),
+        h('div',{style:{fontSize:'10px',color:'var(--text3)'}},'MV USD')
+      ),
+      h('div',{style:{textAlign:'center',minWidth:'50px'}},
+        h('div',{style:{fontSize:'13px',color:'var(--text3)'}},f.equity+'E / '+f.fi+'FI')
+      ),
+      h('div',{style:{textAlign:'center',minWidth:'50px'}},
+        excCount>0?h('span',{className:'sev sev-'+(excCount>3?'high':'medium')},excCount+' exc'):h('span',{style:{fontSize:'12px',color:'var(--emerald)'}},'✓ Clean')
+      )
+    );
+    fundPanel.appendChild(row)
+  });
+  wrap.appendChild(fundPanel);
+
+  // Consistency Rules detail
+  const rulePanel=h('div',{className:'rule-table'});
+  rulePanel.appendChild(h('div',{style:{padding:'16px 20px',borderBottom:'1px solid var(--border2)'}},
+    h('div',{style:{fontWeight:600,fontSize:'14px',color:'#fff'}},'Consistency Rules Detail'),
+    h('div',{style:{fontSize:'12px',color:'var(--text3)',marginTop:'2px'}},'6 rules evaluated across '+S.totalRecords+' positions')
+  ));
+  const rtbl=h('table');
+  rtbl.appendChild(h('thead',null,h('tr',null,
+    h('th',null,'Rule ID'),h('th',null,'Rule Name'),h('th',null,'Pass'),h('th',null,'Fail'),h('th',null,'Score'),h('th',null,'Status')
+  )));
+  const rtbody=h('tbody');
+  DQ_RULES.forEach(r=>{
+    rtbody.appendChild(h('tr',{style:{cursor:'default'}},
+      h('td',null,h('span',{className:'mono',style:{color:'var(--indigo)'}},r.id)),
+      h('td',null,h('span',{style:{fontWeight:500,color:'#fff'}},r.name)),
+      h('td',null,h('span',{style:{color:'var(--emerald)'}},r.pass)),
+      h('td',null,h('span',{style:{color:r.fail>0?'var(--red)':'var(--text3)'}},r.fail)),
+      h('td',null,ring2(r.score,36,3)),
+      h('td',null,r.fail===0?h('span',{style:{color:'var(--emerald)',fontSize:'12px'}},'✓ Pass'):h('span',{className:'sev sev-high'},r.fail+' failures'))
+    ))
+  });
+  rtbl.appendChild(rtbody);
+  rulePanel.appendChild(rtbl);
+  wrap.appendChild(rulePanel);
+
+  // Validity Rules
+  const vPanel=h('div',{className:'rule-table',style:{marginTop:'20px'}});
+  vPanel.appendChild(h('div',{style:{padding:'16px 20px',borderBottom:'1px solid var(--border2)'}},
+    h('div',{style:{fontWeight:600,fontSize:'14px',color:'#fff'}},'Validity Rules Detail'),
+    h('div',{style:{fontSize:'12px',color:'var(--text3)',marginTop:'2px'}},'6 format validation rules — all passing')
+  ));
+  const vtbl=h('table');
+  vtbl.appendChild(h('thead',null,h('tr',null,
+    h('th',null,'Rule ID'),h('th',null,'Rule Name'),h('th',null,'Checks'),h('th',null,'Pass'),h('th',null,'Score')
+  )));
+  const vtbody=h('tbody');
+  DQ_VALIDITY_RULES.forEach(r=>{
+    vtbody.appendChild(h('tr',{style:{cursor:'default'}},
+      h('td',null,h('span',{className:'mono',style:{color:'var(--indigo)'}},r.id)),
+      h('td',null,h('span',{style:{color:'#fff'}},r.name)),
+      h('td',null,fmt(r.total)),
+      h('td',null,h('span',{style:{color:'var(--emerald)'}},fmt(r.pass))),
+      h('td',null,h('span',{style:{color:'var(--emerald)',fontSize:'12px'}},'✓ 100%'))
+    ))
+  });
+  vtbl.appendChild(vtbody);
+  vPanel.appendChild(vtbl);
+  wrap.appendChild(vPanel);
+
+  return wrap
+}
+
+// ── ANALYTICS TAB ──
+function renderAnalytics(){
+  const wrap=h('div');
+  const grid=h('div',{className:'ag'});
+
+  // Exceptions by Fund
+  const c1=h('div',{className:'ac'});
+  c1.appendChild(h('div',{className:'at'},'Exceptions by Fund'));
+  FUNDS.forEach(f=>{
+    const cnt=EXCEPTIONS.filter(e=>e.fund===f.name).length;
+    const highCnt=EXCEPTIONS.filter(e=>e.fund===f.name&&(e.sev==='high'||e.sev==='critical')).length;
+    const pct=Math.round(cnt/EXCEPTIONS.length*100);
+    const row=h('div',{className:'bar-row'});
+    row.appendChild(h('div',{className:'bar-lbl'},f.name.split(' ').slice(-2).join(' ')));
+    const bg=h('div',{className:'bar-bg'});
+    bg.appendChild(h('div',{className:'bar-fg',style:{width:pct+'%',background:highCnt>2?'var(--amber)':'var(--teal)'}}));
+    bg.appendChild(h('div',{className:'bar-val'},cnt+(highCnt>0?' ('+highCnt+' high)':'')));
+    row.appendChild(bg);
+    c1.appendChild(row)
+  });
+  grid.appendChild(c1);
+
+  // Exceptions by Rule
+  const c2=h('div',{className:'ac'});
+  c2.appendChild(h('div',{className:'at'},'Exceptions by DQ Rule'));
+  const ruleGroups={};
+  EXCEPTIONS.forEach(e=>{ruleGroups[e.rule]=(ruleGroups[e.rule]||0)+1});
+  Object.entries(ruleGroups).sort((a,b)=>b[1]-a[1]).forEach(([rule,cnt])=>{
+    const pct=Math.round(cnt/EXCEPTIONS.length*100);
+    const ruleObj=DQ_RULES.find(r=>r.id===rule);
+    const row=h('div',{className:'bar-row'});
+    row.appendChild(h('div',{className:'bar-lbl'},rule+(ruleObj?' · '+ruleObj.name.substring(0,20):'')));
+    const bg=h('div',{className:'bar-bg'});
+    bg.appendChild(h('div',{className:'bar-fg',style:{width:pct+'%',background:rule==='CR-001'?'var(--amber)':'var(--teal)'}}));
+    bg.appendChild(h('div',{className:'bar-val'},cnt));
+    row.appendChild(bg);
+    c2.appendChild(row)
+  });
+  grid.appendChild(c2);
+  wrap.appendChild(grid);
+
+  // Second row
+  const grid2=h('div',{className:'ag',style:{marginTop:'20px'}});
+
+  // Status breakdown
+  const c3=h('div',{className:'ac'});
+  c3.appendChild(h('div',{className:'at'},'Status Distribution'));
+  const statusGroups={};
+  EXCEPTIONS.forEach(e=>{statusGroups[e.status]=(statusGroups[e.status]||0)+1});
+  const statusColors={Open:'var(--red)',InProgress:'var(--amber)',Escalated:'var(--fuchsia)',Resolved:'var(--emerald)',Closed:'var(--text3)'};
+  Object.entries(statusGroups).forEach(([st,cnt])=>{
+    const pct=Math.round(cnt/EXCEPTIONS.length*100);
+    const row=h('div',{className:'bar-row'});
+    row.appendChild(h('div',{className:'bar-lbl'},st==='InProgress'?'In Progress':st));
+    const bg=h('div',{className:'bar-bg'});
+    bg.appendChild(h('div',{className:'bar-fg',style:{width:pct+'%',background:statusColors[st]||'var(--teal)'}}));
+    bg.appendChild(h('div',{className:'bar-val'},cnt+' ('+pct+'%)'));
+    row.appendChild(bg);
+    c3.appendChild(row)
+  });
+  grid2.appendChild(c3);
+
+  // Security type breakdown
+  const c4=h('div',{className:'ac'});
+  c4.appendChild(h('div',{className:'at'},'Exceptions by Security Type'));
+  const typeGroups={};
+  EXCEPTIONS.forEach(e=>{typeGroups[e.secType]=(typeGroups[e.secType]||0)+1});
+  Object.entries(typeGroups).sort((a,b)=>b[1]-a[1]).forEach(([t,cnt])=>{
+    const pct=Math.round(cnt/EXCEPTIONS.length*100);
+    const row=h('div',{className:'bar-row'});
+    row.appendChild(h('div',{className:'bar-lbl'},t));
+    const bg=h('div',{className:'bar-bg'});
+    bg.appendChild(h('div',{className:'bar-fg',style:{width:pct+'%',background:t==='FIXED_INCOME'?'var(--amber)':'var(--teal)'}}));
+    bg.appendChild(h('div',{className:'bar-val'},cnt+' ('+pct+'%)'));
+    row.appendChild(bg);
+    c4.appendChild(row)
+  });
+  grid2.appendChild(c4);
+  wrap.appendChild(grid2);
+
+  // Root cause panel
+  const rca=h('div',{style:{marginTop:'20px',background:'var(--bg3)',border:'1px solid var(--border2)',borderRadius:'12px',padding:'24px'}});
+  rca.appendChild(h('div',{style:{fontWeight:600,fontSize:'14px',color:'#fff',marginBottom:'16px'}},'🔍 Root Cause Analysis'));
+
+  const rcaItems=[
+    {title:'Bond Pricing Convention (CR-001)',count:14,pct:'82%',sev:'high',
+     desc:'All 14 FIXED_INCOME positions fail the MV = Qty × Price rule. Root cause: bonds are priced per 100 face value. The correct formula is MV = Face Value × Clean Price ÷ 100. The rule needs to branch on security_type.',
+     fix:'Update CR-001 to use: IF security_type = FIXED_INCOME THEN MV ≈ face_value × closing_price ÷ 100 ELSE MV ≈ settled_quantity × closing_price'},
+    {title:'Quantity Reconciliation Gap (CR-004)',count:3,pct:'18%',sev:'low',
+     desc:'3 EQUITY positions show settled_quantity ≠ available_quantity with zero pledged and zero on-loan. Affected securities: JNJ (361 shares), NESN (353 shares), ROG (219 shares). All in Swiss or US equities.',
+     fix:'Investigate pending corporate actions or settlement timing. Check if pending_buy/pending_sell quantities should offset the available balance.'}
+  ];
+  rcaItems.forEach(r=>{
+    const item=h('div',{style:{background:'rgba(15,23,42,.5)',border:'1px solid var(--border2)',borderRadius:'10px',padding:'18px',marginBottom:'12px'}});
+    item.appendChild(h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'10px'}},
+      h('div',{style:{display:'flex',alignItems:'center',gap:'8px'}},
+        h('span',{style:{fontWeight:600,color:'#fff'}},r.title),
+        h('span',{className:'sev sev-'+r.sev},r.sev)
+      ),
+      h('span',{style:{fontSize:'13px',color:'var(--text2)'}},r.count+' exceptions ('+r.pct+')')
+    ));
+    item.appendChild(h('div',{style:{fontSize:'13px',color:'var(--text2)',lineHeight:'1.6',marginBottom:'10px'}},r.desc));
+    item.appendChild(h('div',{style:{fontSize:'12px',color:'var(--teal)',background:'rgba(20,184,166,.08)',border:'1px solid rgba(20,184,166,.2)',borderRadius:'6px',padding:'10px',lineHeight:'1.5'}},
+      '💡 Recommended Fix: '+r.fix
+    ));
+    rca.appendChild(item)
+  });
+  wrap.appendChild(rca);
+
+  return wrap
+}
+
+// ── INIT ──
+render();
+</script>
+</body>
+</html>
