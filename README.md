@@ -1,52 +1,86 @@
-# JPMorgan Custody Holdings — DQ Exception Tracker
+# DQ Dashboards — Data Quality Exception Tracking
 
-Interactive data quality monitoring dashboard for JPMorgan Chase daily custody holdings reports.
+Interactive data quality monitoring and exception tracking dashboards for investment management operations.
 
-## Overview
+## Repository Structure
 
-Single-file HTML dashboard (zero dependencies) that performs automated DQ scoring across 5 dimensions on custody position data and surfaces exceptions with full drill-down, JIRA integration, and root cause analysis.
+```
+├── dq-exception-tracker/
+│   ├── ataccama-integration/
+│   │   ├── dashboard.jsx          # React component — Ataccama ONE + JIRA integration
+│   │   └── dashboard.html         # Standalone HTML — Ataccama ONE + JIRA (zero dependencies)
+│   └── generic-dq-engine/
+│       └── dashboard-dq.html      # De-branded HTML — generic "DQ Engine" + JIRA only
+├── jpmc-custody-dq/
+│   └── jpmc-dq-dashboard.html     # JPMorgan Custody Holdings DQ dashboard (real data)
+├── data/
+│   └── JPMORGAN_CUSTODY_DAILY_HOLDINGS_v1.xlsx   # Source data (50 positions, 63 fields)
+└── README.md
+```
 
-## DQ Dimensions Scored
+## Dashboards
 
-| Dimension | Score | Rules |
-|-----------|-------|-------|
-| Completeness | 100% | All 63 fields populated (FI-only fields scoped to Fixed Income rows) |
-| Validity | 100% | ISIN (ISO 6166), dates (ISO 8601), currencies (ISO 4217), quantities, prices |
-| Consistency | 94.33% | MV cross-checks, FX conversion, PnL, qty balance, currency match |
-| Uniqueness | 100% | Report IDs, position keys, tax lot IDs |
-| Timeliness | 100% | Price date and report date vs position date |
-| **Overall** | **98.87%** | |
+### 1. DQ Exception Tracker — Ataccama ONE Integration
+**`dq-exception-tracker/ataccama-integration/`**
 
-## Data Source
+Full-featured exception tracker with bi-directional Ataccama ONE and JIRA integration.
 
-- **File**: `JPMORGAN_CUSTODY_DAILY_HOLDINGS_v1.xlsx`
-- **Report Date**: 2025-03-14
-- **Positions**: 50 across 5 sub-accounts (2 master accounts)
-- **Fields**: 63 columns per position
-- **Asset Types**: 36 Equity, 14 Fixed Income
-- **Currencies**: USD, EUR, CHF, JPY, GBP
-- **Total AUM**: ~$79.2M
+| File | Format | Description |
+|------|--------|-------------|
+| `dashboard.jsx` | React | Component with hooks, state management, Tailwind styling |
+| `dashboard.html` | HTML | Standalone single-file (~1000 lines), zero dependencies |
 
-## Exceptions Detected
+**Features:**
+- 5 Ataccama monitoring projects (Custodian Recon, Securities Master, Corporate Actions, NAV, Bloomberg)
+- 6 DQ dimensions per project with score rings (Completeness, Accuracy, Consistency, Timeliness, Uniqueness, Validity)
+- One-click import: Ataccama DQ issues → dashboard exceptions
+- Sync to Ataccama: update status, push comments, request re-evaluation
+- JIRA ticket creation with DQ rule traceability
+- Table + Board views, filters, sorting, detail slide-over, comment system
+- Analytics: source/category breakdown, integration coverage, DQ scores by source
 
-- **14 High** — Rule CR-001 (MV = Qty × Price): All fixed income positions fail because bonds use face-value pricing convention (MV = face × price ÷ 100)
-- **3 Low** — Rule CR-004 (Qty Balance): Settled ≠ Available with no pledge/loan (JNJ, Nestlé, Roche)
+### 2. DQ Exception Tracker — Generic (De-branded)
+**`dq-exception-tracker/generic-dq-engine/`**
 
-## Features
+Vendor-neutral version with all "Ataccama ONE" references replaced by "DQ Engine". JIRA-only integration settings.
 
-- **Exceptions Tab**: Sortable/filterable table + Kanban board views, detail slide-over with calculation breakdowns
-- **DQ Monitoring Tab**: Dimension score rings, fund-level breakdown, consistency & validity rule detail tables
-- **Analytics Tab**: Distribution charts by fund/rule/status/security type, root cause analysis with recommended fixes
-- **JIRA Integration**: Create tickets with pre-populated fields and DQ rule traceability
-- **Comment System**: Activity log per exception with inline commenting
+### 3. JPMorgan Custody Holdings DQ Dashboard
+**`jpmc-custody-dq/`**
+
+Dashboard built from real custody data (`JPMORGAN_CUSTODY_DAILY_HOLDINGS_v1.xlsx`).
+
+**DQ Scores (computed from 50 positions × 63 fields):**
+
+| Dimension | Score | Findings |
+|-----------|-------|----------|
+| Completeness | 100.0% | All fields populated (FI-only fields scoped correctly) |
+| Validity | 100.0% | ISIN, dates, currencies, quantities pass format checks |
+| Consistency | 94.33% | 14 bond MV mismatches + 3 qty balance breaks |
+| Uniqueness | 100.0% | No duplicate report IDs, position keys, or tax lot IDs |
+| Timeliness | 100.0% | All price/report dates match position date |
+| **Overall** | **98.87%** | **17 exceptions detected** |
+
+**Exceptions:**
+- **14 High** — Rule CR-001: Bond MV uses face-value pricing (MV = face × price ÷ 100), rule expects equity-style (qty × price)
+- **3 Low** — Rule CR-004: Settled ≠ Available qty with no pledge/loan (JNJ, Nestlé, Roche)
+
+**Data Coverage:**
+- 2 master accounts (Alpine Capital Partners, Helvetia Asset Management)
+- 5 sub-accounts / funds
+- 36 equities, 14 fixed income
+- 5 currencies (USD, EUR, CHF, JPY, GBP)
+- Total AUM: ~$79.2M
 
 ## Usage
 
-Open `jpmc-dq-dashboard.html` in any modern browser. No build step, no dependencies, no server required.
+All HTML dashboards are single-file with zero dependencies — open directly in any modern browser.
+
+The React component (`dashboard.jsx`) requires a React build environment with Tailwind CSS.
 
 ## Tech Stack
 
-- Vanilla JavaScript with lightweight `h()` DOM helper
-- State-driven single-pass rendering
+- Vanilla JavaScript with `h()` DOM helper (HTML versions)
+- React with Hooks (JSX version)
 - SVG-based DQ score rings
+- State-driven single-pass rendering
 - Google Fonts (DM Sans, JetBrains Mono)

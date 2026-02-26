@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EXF Exception Tracker — Data Quality Management</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f172a;--bg2:rgba(30,41,59,.6);--bg3:rgba(30,41,59,.4);--bg-card:#1e293b;
+  --border:rgba(51,65,85,.5);--border2:rgba(51,65,85,.35);
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+  --teal:#2dd4bf;--blue:#60a5fa;--indigo:#a5b4fc;--red:#fca5a5;
+  --amber:#fcd34d;--emerald:#34d399;--fuchsia:#e879f9;--orange:#fb923c;
+  --font:'DM Sans',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;
+}
+html{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased}
+body{min-height:100vh}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#334155;border-radius:3px}
+button,select,input,textarea{font-family:inherit;font-size:inherit;color:inherit;outline:none}
+select option{background:#1e293b}
+input::placeholder,textarea::placeholder{color:var(--text3)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,16px)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* Header */
+.header{border-bottom:1px solid var(--border);background:rgba(15,23,42,.95);backdrop-filter:blur(12px);position:sticky;top:0;z-index:30}
+.header-inner{max-width:1600px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+.logo{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#14b8a6,#06b6d4);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0}
+.header-left{display:flex;align-items:center;gap:16px}
+.header-right{display:flex;align-items:center;gap:12px}
+.sep{width:1px;height:24px;background:var(--border);margin:0 4px}
+.conn-badge{display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:500}
+.conn-ata{background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.25);color:var(--indigo)}
+.conn-jira{background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.25);color:var(--blue)}
+.conn-dot{width:5px;height:5px;border-radius:50%;background:var(--emerald)}
+.ata-icon{width:16px;height:16px;border-radius:3px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:7px;font-weight:800}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--emerald);animation:pulse 2s infinite}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:500;border:1px solid var(--border);background:var(--bg2);color:var(--text2);cursor:pointer;transition:all .15s}
+.btn:hover{color:#fff;border-color:rgba(71,85,105,.7)}
+.btn-blue{background:rgba(37,99,235,.8);border-color:transparent;color:#fff}.btn-blue:hover{background:rgba(37,99,235,1)}
+.btn-indigo{background:rgba(79,70,229,.25);border-color:rgba(79,70,229,.4);color:var(--indigo)}.btn-indigo:hover{background:rgba(79,70,229,.35)}
+.btn-teal{background:rgba(20,184,166,.8);border-color:transparent;color:#fff}.btn-teal:hover{background:rgba(20,184,166,1)}
+.btn-sm{padding:4px 10px;font-size:11px}
+.view-tog{display:flex;background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.view-tog button{padding:6px 12px;font-size:12px;background:transparent;border:none;color:var(--text3);cursor:pointer;transition:all .15s}
+.view-tog button.active{background:rgba(20,184,166,.2);color:var(--teal)}
+
+/* Main */
+.main{max-width:1600px;margin:0 auto;padding:24px}
+
+/* Stats */
+.stats-grid{display:grid;grid-template-columns:repeat(9,1fr);gap:12px;margin-bottom:24px}
+.stat{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px;transition:border-color .15s}
+.stat:hover{border-color:rgba(71,85,105,.6)}
+.stat-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}
+.stat-lbl{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--text3)}
+.stat-icon{font-size:16px}
+.stat-val{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* Tabs */
+.tab-nav{display:flex;gap:4px;background:var(--bg3);border:1px solid var(--border2);border-radius:12px;padding:4px;margin-bottom:20px}
+.tab-nav button{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;background:transparent;border:none;color:var(--text3);cursor:pointer;transition:all .15s}
+.tab-nav button.active{background:rgba(51,65,85,.7);color:#fff}
+.tab-nav button:hover:not(.active){color:var(--text)}
+
+/* Filters */
+.filter-bar{background:var(--bg3);border:1px solid var(--border2);border-radius:12px;padding:14px;margin-bottom:20px;display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.f-input{background:rgba(51,65,85,.35);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:#fff;font-size:13px;width:250px;transition:border-color .15s}
+.f-input:focus{border-color:rgba(20,184,166,.5)}
+.f-select{background:rgba(51,65,85,.35);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:#fff;font-size:12px;cursor:pointer}
+
+/* Badges */
+.sev{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.sev-critical{background:rgba(127,29,29,.3);color:var(--red);border:1px solid rgba(185,28,28,.5)}
+.sev-high{background:rgba(120,53,15,.3);color:var(--amber);border:1px solid rgba(180,83,9,.5)}
+.sev-medium{background:rgba(12,74,110,.3);color:#7dd3fc;border:1px solid rgba(14,116,144,.5)}
+.sev-low{background:rgba(51,65,85,.4);color:var(--text2);border:1px solid rgba(71,85,105,.5)}
+.sts{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:500}
+.sts-Open{background:rgba(239,68,68,.15);color:var(--red)}
+.sts-InProgress{background:rgba(245,158,11,.15);color:var(--amber)}
+.sts-Escalated{background:rgba(217,70,239,.15);color:var(--fuchsia)}
+.sts-Resolved{background:rgba(16,185,129,.15);color:var(--emerald)}
+.sts-Closed{background:rgba(100,116,139,.15);color:var(--text3)}
+
+/* Table */
+.tbl-wrap{background:rgba(30,41,59,.3);border:1px solid var(--border2);border-radius:12px;overflow:hidden}
+table{width:100%;border-collapse:collapse}
+th{padding:10px 12px;text-align:left;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);border-bottom:1px solid var(--border);background:rgba(15,23,42,.85)}
+th.sort{cursor:pointer;user-select:none}
+th.sort:hover{color:var(--text)}
+td{padding:10px 12px;border-bottom:1px solid rgba(51,65,85,.25);vertical-align:middle}
+tbody tr{transition:background .1s;cursor:pointer;animation:fadeIn .2s ease-out}
+tbody tr:hover{background:rgba(51,65,85,.12)}
+.int-tag{display:inline-block;padding:1px 5px;border-radius:4px;font-family:var(--mono);font-size:10px;font-weight:500}
+.tag-j{background:rgba(59,130,246,.15);color:var(--blue)}
+.tag-a{background:rgba(99,102,241,.15);color:var(--indigo)}
+
+/* Board */
+.board{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+.bcol{background:rgba(30,41,59,.3);border:1px solid var(--border2);border-radius:12px;overflow:hidden}
+.bcol-head{padding:12px 14px;border-bottom:1px solid var(--border2);display:flex;align-items:center;gap:8px}
+.bcol-body{padding:8px;min-height:180px;max-height:600px;overflow-y:auto}
+.bcard{background:rgba(30,41,59,.6);border:1px solid var(--border2);border-radius:8px;padding:12px;cursor:pointer;transition:border-color .15s;margin-bottom:8px}
+.bcard:hover{border-color:rgba(71,85,105,.6)}
+
+/* DQ Ring */
+.dqr{position:relative;display:inline-flex;align-items:center;justify-content:center}
+.dqr svg{transform:rotate(-90deg)}
+.dqr-txt{position:absolute;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* DQ Panel */
+.ata-panel{background:var(--bg3);border:1px solid var(--border2);border-radius:12px;overflow:hidden;margin-bottom:20px}
+.ata-panel-head{padding:16px 20px;border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between}
+.ata-row{padding:14px 20px;display:flex;align-items:center;gap:16px;border-bottom:1px solid rgba(51,65,85,.25);transition:background .1s;cursor:pointer}
+.ata-row:last-child{border-bottom:none}
+.ata-row:hover{background:rgba(51,65,85,.1)}
+.ata-expand{padding:4px 20px 16px;animation:fadeIn .2s ease-out}
+.dim-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:12px}
+.dim-card{background:rgba(15,23,42,.4);border:1px solid rgba(51,65,85,.3);border-radius:8px;padding:10px;text-align:center}
+.dim-bar{margin-top:6px;height:4px;background:rgba(51,65,85,.4);border-radius:2px;overflow:hidden}
+.dim-fill{height:100%;border-radius:2px;transition:width .7s}
+
+/* Modals */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:var(--bg-card);border:1px solid rgba(71,85,105,.5);border-radius:12px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 25px 50px rgba(0,0,0,.4)}
+.modal-sm{max-width:500px}.modal-lg{max-width:640px}
+.modal-hd{padding:24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-bd{padding:24px;display:flex;flex-direction:column;gap:18px}
+.modal-ft{padding:24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:12px}
+.xbtn{background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:4px}.xbtn:hover{color:#fff}
+.flbl{display:block;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);margin-bottom:6px}
+.fld{width:100%;background:rgba(51,65,85,.35);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:#fff}
+.fld:focus{border-color:rgba(99,102,241,.5)}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.info-bx{border-radius:8px;padding:12px;font-size:11px}
+.info-ind{background:rgba(49,46,129,.2);border:1px solid rgba(67,56,202,.3);color:var(--indigo)}
+.info-amb{background:rgba(120,53,15,.2);border:1px solid rgba(180,83,9,.3);color:var(--amber)}
+.radio-opt{display:flex;align-items:flex-start;gap:12px;padding:12px;border-radius:8px;border:1px solid rgba(51,65,85,.3);background:rgba(15,23,42,.2);cursor:pointer;transition:all .15s}
+.radio-opt.sel{background:rgba(49,46,129,.2);border-color:rgba(79,70,229,.4)}
+.radio-opt input{margin-top:2px;accent-color:#6366f1}
+.cfg-tabs{display:flex;gap:4px;background:rgba(15,23,42,.5);border-radius:8px;padding:4px;margin-top:12px}
+.cfg-tabs button{flex:1;padding:6px;border-radius:6px;font-size:11px;font-weight:500;background:transparent;border:none;color:var(--text3);cursor:pointer}
+.cfg-tabs button.active{background:rgba(51,65,85,.7);color:#fff}
+.tog{width:40px;height:20px;border-radius:10px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.tog.on{background:#4f46e5}.tog.off{background:#475569}
+.tog-th{width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;transition:transform .2s}
+.tog.on .tog-th{transform:translateX(22px)}.tog.off .tog-th{transform:translateX(2px)}
+
+/* Slideover */
+.so-bg{position:fixed;inset:0;z-index:40;display:flex;justify-content:flex-end}
+.so-dim{position:absolute;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px)}
+.so{position:relative;background:var(--bg-card);border-left:1px solid var(--border);width:100%;max-width:520px;overflow-y:auto;box-shadow:-20px 0 40px rgba(0,0,0,.3);animation:slideIn .2s ease-out}
+.so-head{position:sticky;top:0;background:rgba(30,41,59,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:20px;z-index:10}
+.so-body{padding:20px;display:flex;flex-direction:column;gap:24px}
+.ata-info{background:rgba(49,46,129,.1);border:1px solid rgba(67,56,202,.25);border-radius:12px;padding:16px}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mlbl{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text3)}
+.mval{color:#fff;font-size:13px;margin-top:2px}
+.cmt{display:flex;gap:12px;margin-bottom:12px}
+.cmt-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.cmt-sys{background:rgba(51,65,85,.7);color:var(--text3)}
+.cmt-ata{background:rgba(67,56,202,.4);color:var(--indigo)}
+.cmt-usr{background:rgba(20,184,166,.3);color:var(--teal)}
+
+/* Analytics */
+.ana-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.ana-card{background:var(--bg3);border:1px solid var(--border2);border-radius:12px;padding:20px}
+.ana-title{font-weight:600;font-size:13px;margin-bottom:16px;color:#fff}
+.bar-r{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.bar-l{font-size:11px;color:var(--text2);width:130px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-t{flex:1;height:16px;background:rgba(51,65,85,.3);border-radius:99px;overflow:hidden;position:relative}
+.bar-f{height:100%;border-radius:99px;background:linear-gradient(90deg,#0d9488,#06b6d4);transition:width .5s}
+.bar-v{font-size:11px;font-weight:700;width:24px;text-align:right;font-variant-numeric:tabular-nums;color:#fff}
+.cat-g{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cat-c{border-radius:8px;padding:12px;display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:500}
+.cat-v{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+.prg{margin-bottom:14px}
+.prg-top{display:flex;justify-content:space-between;margin-bottom:4px;font-size:11px}
+.prg-trk{height:8px;background:rgba(51,65,85,.4);border-radius:99px;overflow:hidden}
+.prg-fill{height:100%;border-radius:99px;transition:width .5s}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#4f46e5;color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;z-index:60;box-shadow:0 20px 40px rgba(0,0,0,.3);animation:toastIn .3s ease-out}
+.hidden{display:none!important}
+@media(max-width:1200px){.stats-grid{grid-template-columns:repeat(3,1fr)}.board{grid-template-columns:repeat(3,1fr)}.dim-grid{grid-template-columns:repeat(3,1fr)}.ana-grid{grid-template-columns:1fr}}
+@media(max-width:768px){.stats-grid{grid-template-columns:repeat(2,1fr)}.board{grid-template-columns:1fr}.dim-grid{grid-template-columns:repeat(2,1fr)}.header-inner{flex-wrap:wrap;gap:10px}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ── Data ──
+const SEVERITY=['critical','high','medium','low'];
+const STATUSES=['Open','In Progress','Escalated','Resolved','Closed'];
+const CATEGORIES=['Completeness','Consistency','Timeliness','Accuracy','Referential Integrity','Business Rule','Threshold Breach','Schema Violation'];
+const SOURCES=['JPMorgan Chase','BNP Paribas','Citigroup','Standard Chartered','Northern Trust','Bloomberg Feed','Securities Master','Corporate Actions'];
+const DQ_DIMS=['Completeness','Accuracy','Consistency','Timeliness','Uniqueness','Validity'];
+const CAT_COLORS=[
+  {bg:'rgba(20,184,166,.15)',c:'#2dd4bf',bd:'rgba(13,148,136,.3)'},
+  {bg:'rgba(245,158,11,.15)',c:'#fcd34d',bd:'rgba(180,83,9,.3)'},
+  {bg:'rgba(14,165,233,.15)',c:'#7dd3fc',bd:'rgba(2,132,199,.3)'},
+  {bg:'rgba(217,70,239,.15)',c:'#e879f9',bd:'rgba(168,85,247,.3)'},
+  {bg:'rgba(244,63,94,.15)',c:'#fda4af',bd:'rgba(225,29,72,.3)'},
+  {bg:'rgba(16,185,129,.15)',c:'#34d399',bd:'rgba(5,150,105,.3)'},
+  {bg:'rgba(139,92,246,.15)',c:'#c4b5fd',bd:'rgba(109,40,217,.3)'},
+  {bg:'rgba(249,115,22,.15)',c:'#fdba74',bd:'rgba(234,88,12,.3)'}
+];
+
+const PROJECTS=[
+  {id:'mp-001',name:'Custodian Daily Reconciliation',ci:12,lastRun:'2026-02-23T07:00:00Z',dq:94.2,st:'completed',sched:'Daily 07:00 UTC',rules:48,issues:3,dims:{Completeness:96.1,Accuracy:92.8,Consistency:93.5,Timeliness:97.0,Uniqueness:99.2,Validity:95.4}},
+  {id:'mp-002',name:'Securities Master Validation',ci:8,lastRun:'2026-02-23T06:30:00Z',dq:98.7,st:'completed',sched:'Daily 06:30 UTC',rules:35,issues:1,dims:{Completeness:99.1,Accuracy:98.2,Consistency:99.0,Timeliness:98.8,Uniqueness:99.9,Validity:97.5}},
+  {id:'mp-003',name:'Corporate Actions Feed',ci:6,lastRun:'2026-02-23T08:00:00Z',dq:89.4,st:'completed',sched:'Daily 08:00 UTC',rules:22,issues:5,dims:{Completeness:85.3,Accuracy:91.7,Consistency:88.9,Timeliness:90.2,Uniqueness:98.1,Validity:92.4}},
+  {id:'mp-004',name:'NAV & Valuation Quality',ci:15,lastRun:'2026-02-22T18:00:00Z',dq:91.8,st:'completed',sched:'Daily 18:00 UTC',rules:56,issues:4,dims:{Completeness:93.0,Accuracy:88.5,Consistency:92.1,Timeliness:94.6,Uniqueness:99.5,Validity:90.8}},
+  {id:'mp-005',name:'Bloomberg Market Data',ci:4,lastRun:'2026-02-23T07:15:00Z',dq:86.3,st:'warning',sched:'Every 15 min',rules:18,issues:7,dims:{Completeness:82.1,Accuracy:90.4,Consistency:85.7,Timeliness:78.9,Uniqueness:99.8,Validity:91.2}}
+];
+
+const ATA_ISSUES=[
+  {id:'DQ-4401',ruleId:'CR-041',rule:'NAV Record Completeness',dim:'Completeness',proj:'mp-001',cat:'custodian_nav_daily',src:'JPMorgan Chase',dq:78.2,fail:36,tot:164,sev:'critical',desc:'NAV records missing for 12 positions across 3 sub-funds for dates 2026-02-17 to 2026-02-19.',det:'2026-02-20T09:14:00Z',st:'open'},
+  {id:'DQ-4402',ruleId:'AC-018',rule:'Position Quantity Cross-Check',dim:'Consistency',proj:'mp-001',cat:'position_holdings',src:'BNP Paribas',dq:91.3,fail:8,tot:92,sev:'high',desc:'Position quantities differ >0.1% between custodian extract and internal books for 8 fixed income securities.',det:'2026-02-19T14:22:00Z',st:'open'},
+  {id:'DQ-4403',ruleId:'TL-005',rule:'FX Rate Freshness Check',dim:'Timeliness',proj:'mp-005',cat:'bloomberg_fx_rates',src:'Bloomberg Feed',dq:45.6,fail:142,tot:142,sev:'critical',desc:'EUR/USD, GBP/USD, CHF/USD rates stale since 2026-02-20 18:00 UTC.',det:'2026-02-21T07:00:00Z',st:'escalated'},
+  {id:'DQ-4404',ruleId:'VL-022',rule:'SWIFT MT564 Field Validation',dim:'Validity',proj:'mp-003',cat:'corporate_actions_swift',src:'Corporate Actions',dq:96.8,fail:1,tot:31,sev:'medium',desc:'SWIFT MT564 for ISIN DE000BAY0017 missing mandatory ex-date field.',det:'2026-02-22T11:33:00Z',st:'open'},
+  {id:'DQ-4405',ruleId:'UQ-003',rule:'Transaction Deduplication',dim:'Uniqueness',proj:'mp-001',cat:'custodian_transactions',src:'Northern Trust',dq:88.4,fail:47,tot:405,sev:'high',desc:'47 duplicate trade records in daily feed. Key: trade_ref + settlement_date.',det:'2026-02-18T15:44:00Z',st:'in_progress'},
+  {id:'DQ-4406',ruleId:'AC-031',rule:'NAV Tolerance Check',dim:'Accuracy',proj:'mp-004',cat:'nav_comparison',src:'Citigroup',dq:84.2,fail:1,tot:24,sev:'high',desc:'NAV diff 0.47% (threshold 0.25%) between Citi admin NAV and internal calc.',det:'2026-02-22T16:10:00Z',st:'open'},
+  {id:'DQ-4407',ruleId:'VL-008',rule:'ISIN Format ISO 6166',dim:'Validity',proj:'mp-002',cat:'securities_master',src:'Securities Master',dq:99.6,fail:3,tot:842,sev:'low',desc:'3 ISINs failing ISO 6166 check-digit validation.',det:'2026-02-17T12:00:00Z',st:'resolved'},
+  {id:'DQ-4408',ruleId:'CS-012',rule:'Cash Balance Reconciliation',dim:'Consistency',proj:'mp-001',cat:'cash_balances',src:'Standard Chartered',dq:92.5,fail:4,tot:53,sev:'medium',desc:'CHF cash balance diff of CHF 234,891.50 across 4 accounts.',det:'2026-02-21T10:15:00Z',st:'in_progress'},
+  {id:'DQ-4409',ruleId:'CR-BM-002',rule:'Benchmark Returns Completeness',dim:'Completeness',proj:'mp-005',cat:'benchmark_returns',src:'Bloomberg Feed',dq:0.0,fail:3,tot:3,sev:'medium',desc:'MSCI World, MSCI EM, BBG Barclays Global Agg returns missing for 2026-02-21.',det:'2026-02-23T06:00:00Z',st:'open'},
+  {id:'DQ-4410',ruleId:'BR-STL-001',rule:'Settlement Status Business Rule',dim:'Consistency',proj:'mp-001',cat:'custodian_transactions',src:'JPMorgan Chase',dq:96.3,fail:15,tot:405,sev:'low',desc:'15 trades pending in JPM extract but settled internally. T+2 mismatch.',det:'2026-02-15T08:30:00Z',st:'closed'}
+];
+
+let exceptions=[
+  {id:'DQE-1001',title:'Missing NAV records for Q4 reporting period',category:'Completeness',source:'JPMorgan Chase',severity:'critical',status:'Open',assignee:'M. Schmidt',created:'2026-02-20T09:14:00Z',updated:'2026-02-23T08:30:00Z',fund:'Trinity Global Equity Fund',jiraKey:null,ataRef:'DQ-4401',ataDQ:78.2,ataRule:'CR-041',desc:'NAV records missing for 12 positions across 3 sub-funds for dates 2026-02-17 to 2026-02-19.',records:36,comments:[{u:'DQ Engine',t:'DQ rule CR-041 (NAV Record Completeness) triggered — score dropped to 78.2%',ts:'2026-02-20T09:14:00Z'},{u:'System',t:'Auto-imported from DQ monitoring project: Custodian Daily Reconciliation',ts:'2026-02-20T09:15:00Z'}]},
+  {id:'DQE-1002',title:'Position mismatch between custodian and fund accounting',category:'Consistency',source:'BNP Paribas',severity:'high',status:'In Progress',assignee:'J. Weber',created:'2026-02-19T14:22:00Z',updated:'2026-02-22T16:45:00Z',fund:'EXF Multi-Strategy Fund',jiraKey:'DATA-4521',ataRef:'DQ-4402',ataDQ:91.3,ataRule:'AC-018',desc:'Positions for 8 fixed income securities show quantity differences >0.1% between BNP extract and internal books.',records:8,comments:[{u:'DQ Engine',t:'DQ rule AC-018 (Position Quantity Cross-Check) failed for 8 records',ts:'2026-02-19T14:22:00Z'},{u:'J. Weber',t:'Investigating - settlement date vs trade date mismatch',ts:'2026-02-20T10:00:00Z'},{u:'System',t:'JIRA ticket DATA-4521 created',ts:'2026-02-20T10:05:00Z'}]},
+  {id:'DQE-1003',title:'Stale FX rates detected in valuation feed',category:'Timeliness',source:'Bloomberg Feed',severity:'critical',status:'Escalated',assignee:'A. Chen',created:'2026-02-21T07:00:00Z',updated:'2026-02-23T07:15:00Z',fund:'All Funds',jiraKey:'DATA-4528',ataRef:'DQ-4403',ataDQ:45.6,ataRule:'TL-005',desc:'EUR/USD, GBP/USD, CHF/USD rates not updated since 2026-02-20 18:00 UTC. Downstream valuations affected.',records:142,comments:[{u:'DQ Engine',t:'AI Anomaly Detection: time-dependent anomaly — FX rate staleness exceeds 12h threshold',ts:'2026-02-21T07:00:00Z'},{u:'A. Chen',t:'Bloomberg connectivity issue confirmed - vendor ticket raised',ts:'2026-02-21T08:30:00Z'},{u:'M. Schmidt',t:'Escalated to VP Operations - manual rate override approved for EOD',ts:'2026-02-21T14:00:00Z'}]},
+  {id:'DQE-1004',title:'Corporate action: dividend record missing ex-date',category:'Accuracy',source:'Corporate Actions',severity:'medium',status:'Open',assignee:null,created:'2026-02-22T11:33:00Z',updated:'2026-02-22T11:33:00Z',fund:'Trinity Income Fund',jiraKey:null,ataRef:'DQ-4404',ataDQ:96.8,ataRule:'VL-022',desc:'SWIFT MT564 for ISIN DE000BAY0017 received without ex-date field populated.',records:1,comments:[{u:'DQ Engine',t:'DQ rule VL-022 (SWIFT MT564 Field Validation) — missing mandatory field: ex_date',ts:'2026-02-22T11:33:00Z'}]},
+  {id:'DQE-1005',title:'Duplicate transaction records in daily extract',category:'Referential Integrity',source:'Northern Trust',severity:'high',status:'In Progress',assignee:'L. Muller',created:'2026-02-18T15:44:00Z',updated:'2026-02-21T09:20:00Z',fund:'EXF Absolute Return Fund',jiraKey:'DATA-4515',ataRef:'DQ-4405',ataDQ:88.4,ataRule:'UQ-003',desc:'47 duplicate trade records in Northern Trust daily feed. Key: trade_ref + settlement_date.',records:47,comments:[{u:'DQ Engine',t:'DQ rule UQ-003 (Transaction Deduplication) — 47 duplicates',ts:'2026-02-18T15:44:00Z'},{u:'L. Muller',t:'Northern Trust confirmed double SFTP send',ts:'2026-02-19T10:00:00Z'},{u:'L. Muller',t:'Dedup script applied - awaiting recon confirmation',ts:'2026-02-21T09:20:00Z'}]},
+  {id:'DQE-1006',title:'NAV tolerance breach on emerging markets portfolio',category:'Threshold Breach',source:'Citigroup',severity:'high',status:'Open',assignee:'J. Weber',created:'2026-02-22T16:10:00Z',updated:'2026-02-23T08:00:00Z',fund:'Trinity EM Growth Fund',jiraKey:null,ataRef:'DQ-4406',ataDQ:84.2,ataRule:'AC-031',desc:'NAV diff 0.47% between Citi administrator NAV and internal calc. Threshold is 0.25%.',records:1,comments:[{u:'DQ Engine',t:'AI Anomaly: NAV deviation 0.47% exceeds historical range',ts:'2026-02-22T16:10:00Z'},{u:'System',t:'Threshold rule AC-031: diff=0.47%, limit=0.25%',ts:'2026-02-22T16:10:00Z'}]},
+  {id:'DQE-1007',title:'Invalid ISIN format in securities master update',category:'Schema Violation',source:'Securities Master',severity:'low',status:'Resolved',assignee:'A. Chen',created:'2026-02-17T12:00:00Z',updated:'2026-02-19T14:30:00Z',fund:'N/A',jiraKey:'DATA-4510',ataRef:'DQ-4407',ataDQ:99.6,ataRule:'VL-008',desc:'3 records with ISINs failing ISO 6166 check-digit validation.',records:3,comments:[{u:'DQ Engine',t:'DQ rule VL-008 (ISIN Format ISO 6166) — 3 failed',ts:'2026-02-17T12:00:00Z'},{u:'A. Chen',t:'Corrected ISINs patched. Root cause: manual entry error.',ts:'2026-02-19T14:30:00Z'},{u:'System',t:'DQ status synced — resolved',ts:'2026-02-19T14:31:00Z'}]},
+  {id:'DQE-1008',title:'Cash balance reconciliation break - CHF accounts',category:'Consistency',source:'Standard Chartered',severity:'medium',status:'In Progress',assignee:'M. Schmidt',created:'2026-02-21T10:15:00Z',updated:'2026-02-22T17:00:00Z',fund:'Trinity Swiss Balanced Fund',jiraKey:'DATA-4525',ataRef:'DQ-4408',ataDQ:92.5,ataRule:'CS-012',desc:'CHF cash balances diff CHF 234,891.50 across 4 accounts.',records:4,comments:[{u:'DQ Engine',t:'DQ rule CS-012 — 4 accounts with breaks',ts:'2026-02-21T10:15:00Z'},{u:'M. Schmidt',t:'Pending FX spot maturing 2026-02-24 - likely cause',ts:'2026-02-22T17:00:00Z'}]},
+  {id:'DQE-1009',title:'Missing benchmark returns for performance attribution',category:'Completeness',source:'Bloomberg Feed',severity:'medium',status:'Open',assignee:null,created:'2026-02-23T06:00:00Z',updated:'2026-02-23T06:00:00Z',fund:'All Funds',jiraKey:null,ataRef:'DQ-4409',ataDQ:0.0,ataRule:'CR-BM-002',desc:'MSCI World, MSCI EM, BBG Barclays Global Agg benchmark returns missing for 2026-02-21.',records:3,comments:[{u:'DQ Engine',t:'DQ rule CR-BM-002 — 0% pass rate, all records missing',ts:'2026-02-23T06:00:00Z'}]},
+  {id:'DQE-1010',title:'Trade settlement status discrepancy',category:'Business Rule',source:'JPMorgan Chase',severity:'low',status:'Closed',assignee:'L. Muller',created:'2026-02-15T08:30:00Z',updated:'2026-02-18T11:00:00Z',fund:'EXF Multi-Strategy Fund',jiraKey:'DATA-4498',ataRef:'DQ-4410',ataDQ:96.3,ataRule:'BR-STL-001',desc:'15 trades pending in JPM extract but settled internally. T+2 mismatch.',records:15,comments:[{u:'DQ Engine',t:'DQ rule BR-STL-001 — 15 mismatches',ts:'2026-02-15T08:30:00Z'},{u:'L. Muller',t:'Timing issue - JPM extract before settlement confirm. No action.',ts:'2026-02-18T11:00:00Z'},{u:'System',t:'DQ status synced — closed',ts:'2026-02-18T11:01:00Z'}]}
+];
+
+// ── State ──
+let state = {
+  activeTab: 'exceptions', view: 'table', selectedId: null,
+  jiraModalId: null, ataSyncId: null, showConfig: false,
+  filters: { severity:'all', status:'all', source:'all', category:'all', search:'' },
+  sortBy: 'updated', sortDir: 'desc',
+  expandedProject: null, toastMsg: null, toastTimer: null,
+  jiraCfg: { baseUrl:'https://exf-data.atlassian.net', projectKey:'DATA', email:'', apiToken:'' }
+};
+
+// ── Helpers ──
+function h(tag, attrs, ...ch) {
+  const el = document.createElement(tag);
+  if (attrs) Object.entries(attrs).forEach(([k,v]) => {
+    if (k === 'className') el.className = v;
+    else if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
+    else if (k.startsWith('on')) el.addEventListener(k.slice(2).toLowerCase(), v);
+    else if (k === 'innerHTML') el.innerHTML = v;
+    else el.setAttribute(k, v);
+  });
+  ch.flat(9).forEach(c => { if (c != null && c !== false) el.append(typeof c === 'string' || typeof c === 'number' ? document.createTextNode(String(c)) : c); });
+  return el;
+}
+
+function timeAgo(d) {
+  const m = Math.floor((Date.now()-new Date(d).getTime())/60000);
+  if (m < 60) return m+'m ago';
+  const hr = Math.floor(m/60);
+  if (hr < 24) return hr+'h ago';
+  return Math.floor(hr/24)+'d ago';
+}
+function fmtDate(d) { return new Date(d).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
+function dqCol(s) { return s>=95?'var(--emerald)':s>=85?'var(--amber)':s>=70?'var(--orange)':'var(--red)'; }
+function dqBg(s) { return s>=95?'#34d399':s>=85?'#fbbf24':s>=70?'#fb923c':'#f87171'; }
+function stsClass(s) { return 'sts sts-'+s.replace(/ /g,''); }
+function sevClass(s) { return 'sev sev-'+s; }
+
+function dqRing(score, size=36, sw=3.5) {
+  const r=(size-sw)/2, circ=2*Math.PI*r, off=circ-(score/100)*circ;
+  const col = score>=95?'#34d399':score>=85?'#fbbf24':score>=70?'#fb923c':'#f87171';
+  const fs = size < 40 ? 9 : 11;
+  return h('div',{className:'dqr',style:{width:size+'px',height:size+'px'}},
+    h('svg',{innerHTML:`<circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="#334155" stroke-width="${sw}"/><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${col}" stroke-width="${sw}" stroke-dasharray="${circ}" stroke-dashoffset="${off}" stroke-linecap="round" style="transition:all .7s"/>`,style:{width:size+'px',height:size+'px',transform:'rotate(-90deg)'}}),
+    h('span',{className:'dqr-txt',style:{fontSize:fs+'px',color:col}}, score > 0 ? Math.round(score) : '—')
+  );
+}
+
+function toast(msg) {
+  state.toastMsg = msg;
+  if (state.toastTimer) clearTimeout(state.toastTimer);
+  state.toastTimer = setTimeout(() => { state.toastMsg = null; render(); }, 3500);
+  render();
+}
+
+function getFiltered() {
+  const f = state.filters;
+  return exceptions.filter(e => {
+    if (f.severity!=='all' && e.severity!==f.severity) return false;
+    if (f.status!=='all' && e.status!==f.status) return false;
+    if (f.source!=='all' && e.source!==f.source) return false;
+    if (f.category!=='all' && e.category!==f.category) return false;
+    if (f.search && !(e.id+' '+e.title+' '+e.desc+' '+e.fund+' '+(e.ataRef||'')+' '+(e.ataRule||'')).toLowerCase().includes(f.search.toLowerCase())) return false;
+    return true;
+  }).sort((a,b) => {
+    const d = state.sortDir==='asc'?1:-1;
+    if (state.sortBy==='severity') { const o={critical:0,high:1,medium:2,low:3}; return (o[a.severity]-o[b.severity])*d; }
+    if (state.sortBy==='dqScore') return ((a.ataDQ||100)-(b.ataDQ||100))*d;
+    return (new Date(a[state.sortBy])-new Date(b[state.sortBy]))*d;
+  });
+}
+
+function getStats() {
+  const act = exceptions.filter(e=>e.status!=='Closed'&&e.status!=='Resolved');
+  const scored = exceptions.filter(e=>e.ataDQ!=null&&e.status!=='Closed');
+  return {
+    total: exceptions.length,
+    open: exceptions.filter(e=>e.status==='Open').length,
+    critical: exceptions.filter(e=>e.severity==='critical'&&e.status!=='Closed'&&e.status!=='Resolved').length,
+    escalated: exceptions.filter(e=>e.status==='Escalated').length,
+    jira: exceptions.filter(e=>e.jiraKey).length,
+    ata: exceptions.filter(e=>e.ataRef).length,
+    unassigned: act.filter(e=>!e.assignee).length,
+    records: act.reduce((s,e)=>s+e.records,0),
+    avgDQ: scored.length ? (scored.reduce((s,e)=>s+e.ataDQ,0)/scored.length).toFixed(1) : '—'
+  };
+}
+
+// ── Render Functions ──
+function renderHeader() {
+  return h('header',{className:'header'},
+    h('div',{className:'header-inner'},
+      h('div',{className:'header-left'},
+        h('div',{style:{display:'flex',alignItems:'center',gap:'8px'}},
+          h('div',{className:'logo'},'E'),
+          h('div',{},
+            h('div',{style:{color:'#fff',fontWeight:700,fontSize:'16px',lineHeight:1}},'Exception Tracker'),
+            h('div',{style:{color:'var(--text3)',fontSize:'11px',marginTop:'2px'}},'EXF Data Quality Management')
+          )
+        ),
+        h('div',{className:'sep'}),
+        h('div',{style:{display:'flex',alignItems:'center',gap:'12px'}},
+          h('div',{style:{display:'flex',alignItems:'center',gap:'6px'}},
+            h('span',{className:'live-dot'}),
+            h('span',{style:{color:'var(--text3)',fontSize:'11px'}},'Live')
+          ),
+          h('span',{className:'conn-badge conn-ata'},
+            h('span',{className:'ata-icon'},'DQ'),
+            'DQ Engine',
+            h('span',{className:'conn-dot'})
+          ),
+          h('span',{className:'conn-badge conn-jira'},
+            h('svg',{innerHTML:'<path d="M11.53 2c0 2.4 1.97 4.35 4.35 4.35h1.78v1.7c0 2.4 1.94 4.34 4.34 4.35V2.84a.84.84 0 0 0-.84-.84h-9.63z" fill="#93c5fd"/><path d="M6.77 6.82a4.36 4.36 0 0 0 4.34 4.34h1.78v1.72a4.36 4.36 0 0 0 4.34 4.34V7.66a.84.84 0 0 0-.84-.84H6.77z" fill="#93c5fd"/><path d="M2 11.65c.02 2.4 1.96 4.34 4.34 4.34h1.78v1.72a4.35 4.35 0 0 0 4.35 4.29v-9.51a.84.84 0 0 0-.84-.84H2z" fill="#93c5fd"/>',style:{width:'12px',height:'12px'},viewBox:'0 0 24 24'}),
+            'JIRA',
+            h('span',{className:'conn-dot'})
+          )
+        )
+      ),
+      h('div',{className:'header-right'},
+        h('button',{className:'btn',onClick:()=>{state.showConfig=true;render();}},'⚙ JIRA Settings'),
+        h('div',{className:'view-tog'},
+          h('button',{className:state.view==='table'?'active':'',onClick:()=>{state.view='table';render();}},'Table'),
+          h('button',{className:state.view==='board'?'active':'',onClick:()=>{state.view='board';render();}},'Board')
+        )
+      )
+    )
+  );
+}
+
+function renderStats() {
+  const s = getStats();
+  const cards = [
+    ['Total',s.total,'#fff','📋'],['Open',s.open,'var(--red)','🔴'],['Critical',s.critical,'var(--red)','🚨'],
+    ['Escalated',s.escalated,'var(--fuchsia)','⬆'],['JIRA Linked',s.jira,'var(--blue)','🔗'],
+    ['DQ',s.ata,'var(--indigo)','🅐','of '+s.total],['Unassigned',s.unassigned,'var(--amber)','👤'],
+    ['Records',s.records.toLocaleString(),'var(--teal)','📊','impacted'],
+    ['Avg DQ',s.avgDQ+'%',dqCol(parseFloat(s.avgDQ)||100),'📈','open issues']
+  ];
+  return h('div',{className:'stats-grid'},
+    ...cards.map(([lbl,val,col,icon,sub])=>
+      h('div',{className:'stat'},
+        h('div',{className:'stat-top'},
+          h('span',{className:'stat-lbl'},lbl),
+          h('span',{className:'stat-icon'},icon)
+        ),
+        h('div',{className:'stat-val',style:{color:col}},val),
+        sub ? h('div',{className:'stat-sub'},sub) : null
+      )
+    )
+  );
+}
+
+function renderTabNav() {
+  return h('div',{className:'tab-nav'},
+    ...['exceptions','monitoring','analytics'].map(t =>
+      h('button',{className:state.activeTab===t?'active':'',onClick:()=>{state.activeTab=t;render();}},
+        t==='exceptions'?'Exceptions':t==='monitoring'?'DQ Monitoring':'Analytics'
+      )
+    )
+  );
+}
+
+function renderFilters() {
+  const f = state.filters;
+  const mkSel = (key, label, opts) => {
+    const sel = h('select',{className:'f-select',value:f[key]});
+    sel.innerHTML = '<option value="all">All '+label+'</option>' + opts.map(o=>'<option value="'+o+'"'+(f[key]===o?' selected':'')+'>'+o+'</option>').join('');
+    sel.value = f[key];
+    sel.addEventListener('change',e=>{state.filters[key]=e.target.value;render();});
+    return sel;
+  };
+  const inp = h('input',{className:'f-input',type:'text',placeholder:'Search exceptions, rules, refs...',value:f.search});
+  inp.addEventListener('input',e=>{state.filters.search=e.target.value;render();});
+  const clr = h('button',{className:'btn btn-sm',style:{marginLeft:'auto'},onClick:()=>{state.filters={severity:'all',status:'all',source:'all',category:'all',search:''};render();}},'Clear');
+  const cnt = h('span',{style:{fontSize:'11px',color:'var(--text3)'}},getFiltered().length+' of '+exceptions.length);
+  return h('div',{className:'filter-bar'},inp,
+    mkSel('severity','Severity',SEVERITY.map(s=>s.charAt(0).toUpperCase()+s.slice(1))),
+    mkSel('status','Status',STATUSES),
+    mkSel('source','Sources',SOURCES),
+    mkSel('category','Categories',CATEGORIES),
+    clr, cnt
+  );
+}
+
+function renderTable() {
+  const filtered = getFiltered();
+  const mkTh = (label, field) => {
+    const th = h('th',{className:'sort',onClick:()=>{
+      if(state.sortBy===field) state.sortDir=state.sortDir==='asc'?'desc':'asc';
+      else{state.sortBy=field;state.sortDir='desc';}
+      render();
+    }}, label, state.sortBy===field ? h('span',{style:{color:'var(--teal)',marginLeft:'4px'}},state.sortDir==='asc'?'↑':'↓') : null);
+    return th;
+  };
+  const thead = h('thead',{},h('tr',{},
+    h('th',{},'ID'),h('th',{style:{width:'25%'}},'Exception'),
+    mkTh('Severity','severity'),h('th',{},'Status'),mkTh('DQ','dqScore'),
+    h('th',{},'Source'),h('th',{},'Assignee'),h('th',{},'Integrations'),
+    mkTh('Updated','updated'),h('th',{},'Rec.')
+  ));
+  const tbody = h('tbody',{});
+  filtered.forEach((e,i) => {
+    const tr = h('tr',{style:{animationDelay:i*20+'ms'},onClick:()=>{state.selectedId=e.id;render();}},
+      h('td',{},h('span',{style:{fontFamily:'var(--mono)',fontSize:'11px',color:'var(--teal)'}},e.id)),
+      h('td',{},
+        h('div',{style:{color:'#fff',fontSize:'13px',fontWeight:500,lineHeight:1.25}},e.title),
+        h('div',{style:{color:'var(--text3)',fontSize:'11px',marginTop:'3px',display:'flex',alignItems:'center',gap:'6px'}},
+          e.category,
+          e.ataRule ? h('span',{style:{color:'rgba(165,180,252,.5)',fontFamily:'var(--mono)'}},'('+e.ataRule+')') : null
+        )
+      ),
+      h('td',{},h('span',{className:sevClass(e.severity)},e.severity)),
+      h('td',{},h('span',{className:stsClass(e.status)},e.status)),
+      h('td',{},e.ataDQ!=null ? dqRing(e.ataDQ,32,3) : h('span',{style:{color:'var(--text3)',fontSize:'11px'}},'—')),
+      h('td',{},h('span',{style:{color:'var(--text2)',fontSize:'11px'}},e.source)),
+      h('td',{},e.assignee ? h('span',{style:{color:'var(--text)',fontSize:'11px'}},e.assignee) : h('span',{style:{color:'var(--text3)',fontSize:'11px',fontStyle:'italic'}},'—')),
+      h('td',{},h('div',{style:{display:'flex',alignItems:'center',gap:'6px'}},
+        e.jiraKey ? h('span',{className:'int-tag tag-j'},e.jiraKey) : h('button',{className:'btn btn-sm',style:{fontSize:'10px',padding:'2px 6px'},onClick:ev=>{ev.stopPropagation();state.jiraModalId=e.id;render();}},'+J'),
+        e.ataRef ? h('span',{className:'int-tag tag-a',title:e.ataRef},'ONE') : h('span',{style:{color:'var(--text3)',fontSize:'11px'}},'—')
+      )),
+      h('td',{},h('span',{style:{color:'var(--text3)',fontSize:'11px',whiteSpace:'nowrap'}},timeAgo(e.updated))),
+      h('td',{},h('span',{style:{color:'var(--text2)',fontSize:'11px',fontVariantNumeric:'tabular-nums'}},e.records))
+    );
+    tbody.appendChild(tr);
+  });
+  if(!filtered.length) tbody.appendChild(h('tr',{},h('td',{colspan:10,style:{textAlign:'center',padding:'48px',color:'var(--text3)'}},'No exceptions match the current filters.')));
+  return h('div',{className:'tbl-wrap'},h('div',{style:{overflowX:'auto'}},h('table',{},thead,tbody)));
+}
+
+function renderBoard() {
+  const filtered = getFiltered();
+  return h('div',{className:'board'},
+    ...STATUSES.map(status => {
+      const items = filtered.filter(e=>e.status===status);
+      return h('div',{className:'bcol'},
+        h('div',{className:'bcol-head'},
+          h('span',{className:stsClass(status)},status),
+          h('span',{style:{color:'var(--text3)',fontSize:'11px'}},'('+items.length+')')
+        ),
+        h('div',{className:'bcol-body'},
+          ...items.map(e=>h('div',{className:'bcard',onClick:()=>{state.selectedId=e.id;render();}},
+            h('div',{style:{display:'flex',justifyContent:'space-between',marginBottom:'6px'}},
+              h('span',{style:{fontFamily:'var(--mono)',fontSize:'11px',color:'var(--teal)'}},e.id),
+              h('span',{className:sevClass(e.severity)},e.severity)
+            ),
+            h('div',{style:{color:'#fff',fontSize:'11px',fontWeight:500,lineHeight:1.35,marginBottom:'8px'}},e.title),
+            h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center'}},
+              h('div',{style:{display:'flex',alignItems:'center',gap:'6px'}},
+                e.ataDQ!=null?dqRing(e.ataDQ,22,2.5):null,
+                h('span',{style:{color:'var(--text3)',fontSize:'11px'}},e.source)
+              ),
+              h('div',{style:{display:'flex',alignItems:'center',gap:'4px'}},
+                e.jiraKey?h('span',{style:{color:'var(--blue)',fontSize:'10px'}},'J'):null,
+                e.ataRef?h('span',{style:{color:'var(--indigo)',fontSize:'10px'}},'A'):null,
+                e.assignee?h('div',{style:{width:'20px',height:'20px',borderRadius:'50%',background:'rgba(20,184,166,.25)',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--teal)',fontSize:'10px',fontWeight:700}},e.assignee[0]):null
+              )
+            )
+          ))
+        )
+      );
+    })
+  );
+}
+
+function renderMonitoring() {
+  const panel = h('div',{className:'ata-panel'},
+    h('div',{className:'ata-panel-head'},
+      h('div',{style:{display:'flex',alignItems:'center',gap:'12px'}},
+        h('div',{style:{width:'28px',height:'28px',borderRadius:'6px',background:'linear-gradient(135deg,#6366f1,#8b5cf6)',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontWeight:700,fontSize:'10px'}},'DQ'),
+        h('div',{},
+          h('div',{style:{color:'#fff',fontWeight:600,fontSize:'13px'}},'DQ Monitoring Projects'),
+          h('div',{style:{color:'var(--text3)',fontSize:'11px'}},'DQ evaluation results from monitoring engine')
+        )
+      ),
+      h('div',{style:{display:'flex',alignItems:'center',gap:'8px'}},
+        h('span',{style:{width:'7px',height:'7px',borderRadius:'50%',background:'var(--emerald)',animation:'pulse 2s infinite'}}),
+        h('span',{style:{color:'var(--text3)',fontSize:'11px'}},'Connected')
+      )
+    )
+  );
+  PROJECTS.forEach(p => {
+    const row = h('div',{className:'ata-row',onClick:()=>{state.expandedProject=state.expandedProject===p.id?null:p.id;render();}},
+      dqRing(p.dq,42,4),
+      h('div',{style:{flex:1,minWidth:0}},
+        h('div',{style:{display:'flex',alignItems:'center',gap:'8px'}},
+          h('span',{style:{color:'#fff',fontSize:'13px',fontWeight:500}},p.name),
+          p.st==='warning'?h('span',{style:{padding:'2px 6px',borderRadius:'4px',fontSize:'10px',background:'rgba(120,53,15,.3)',color:'var(--amber)',border:'1px solid rgba(180,83,9,.4)'}},'Warning'):null
+        ),
+        h('div',{style:{display:'flex',alignItems:'center',gap:'10px',marginTop:'3px',color:'var(--text3)',fontSize:'11px'}},
+          p.ci+' catalog items', h('span',{style:{color:'var(--text3)'}},'·'), p.rules+' rules', h('span',{style:{color:'var(--text3)'}},'·'), 'Last: '+timeAgo(p.lastRun)
+        )
+      ),
+      h('div',{style:{textAlign:'right',flexShrink:0}},
+        p.issues>0?h('span',{style:{color:'var(--red)',fontSize:'13px',fontWeight:700}},p.issues+' issues'):h('span',{style:{color:'var(--emerald)',fontSize:'13px',fontWeight:500}},'Clean'),
+        h('div',{style:{color:'var(--text3)',fontSize:'11px'}},p.sched)
+      ),
+      h('span',{innerHTML:'<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19 9l-7 7-7-7"/></svg>',style:{color:'var(--text3)',transform:state.expandedProject===p.id?'rotate(180deg)':'',transition:'transform .2s'}})
+    );
+    panel.appendChild(row);
+    if (state.expandedProject===p.id) {
+      const exp = h('div',{className:'ata-expand'},
+        h('div',{className:'dim-grid'},
+          ...DQ_DIMS.map(dim => h('div',{className:'dim-card'},
+            h('div',{style:{fontSize:'16px',fontWeight:700,fontVariantNumeric:'tabular-nums',color:dqCol(p.dims[dim])}},p.dims[dim]+'%'),
+            h('div',{style:{color:'var(--text3)',fontSize:'11px',marginTop:'2px'}},dim),
+            h('div',{className:'dim-bar'},h('div',{className:'dim-fill',style:{width:p.dims[dim]+'%',background:dqBg(p.dims[dim])}}))
+          ))
+        ),
+        h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center'}},
+          h('a',{href:'#',style:{fontSize:'11px',color:'var(--indigo)',transition:'color .15s'}},'Open in DQ Portal ↗'),
+          h('button',{className:'btn btn-indigo btn-sm',onClick:(ev)=>{ev.stopPropagation();importIssues(p.id);}},'Import '+p.issues+' Issues as Exceptions')
+        )
+      );
+      panel.appendChild(exp);
+    }
+  });
+
+  // Cross-project DQ averages
+  const avgPanel = h('div',{style:{background:'var(--bg3)',border:'1px solid var(--border2)',borderRadius:'12px',padding:'20px',marginBottom:'20px'}},
+    h('div',{style:{color:'#fff',fontWeight:600,fontSize:'13px',marginBottom:'16px'}},'Cross-Project DQ Dimension Averages'),
+    h('div',{className:'dim-grid'},
+      ...DQ_DIMS.map(dim => {
+        const avg = PROJECTS.reduce((s,p)=>s+p.dims[dim],0)/PROJECTS.length;
+        return h('div',{style:{textAlign:'center'}},
+          dqRing(avg,56,5),
+          h('div',{style:{color:'var(--text2)',fontSize:'11px',fontWeight:500,marginTop:'8px'}},dim),
+          h('div',{style:{color:'var(--text3)',fontSize:'11px'}},avg.toFixed(1)+'%')
+        );
+      })
+    )
+  );
+
+  // DQ issues table
+  const issTable = h('div',{className:'tbl-wrap'},
+    h('div',{style:{padding:'12px 20px',borderBottom:'1px solid var(--border2)',display:'flex',justifyContent:'space-between',alignItems:'center'}},
+      h('span',{style:{color:'#fff',fontWeight:600,fontSize:'13px'}},'DQ Engine — Issues Detected'),
+      h('span',{style:{color:'var(--text3)',fontSize:'11px'}},ATA_ISSUES.length+' issues detected')
+    ),
+    h('div',{style:{overflowX:'auto'}},(() => {
+      const tbl = h('table',{},
+        h('thead',{},h('tr',{},
+          h('th',{},'Issue'),h('th',{},'Rule'),h('th',{},'Dimension'),h('th',{},'DQ Score'),
+          h('th',{},'Failed / Total'),h('th',{},'Source'),h('th',{},'Status'),h('th',{},'Linked')
+        )),
+        h('tbody',{},...ATA_ISSUES.map(iss => {
+          const linked = exceptions.find(e=>e.ataRef===iss.id);
+          const stsCls = iss.st==='open'?'sts-Open':iss.st==='in_progress'?'sts-InProgress':iss.st==='escalated'?'sts-Escalated':iss.st==='resolved'?'sts-Resolved':'sts-Closed';
+          return h('tr',{},
+            h('td',{},h('span',{style:{color:'var(--indigo)',fontFamily:'var(--mono)',fontSize:'11px'}},iss.id)),
+            h('td',{},h('div',{style:{color:'#fff',fontSize:'11px',fontWeight:500}},iss.rule),h('div',{style:{color:'var(--text3)',fontSize:'11px',fontFamily:'var(--mono)'}},iss.ruleId)),
+            h('td',{},h('span',{style:{color:'var(--text2)',fontSize:'11px'}},iss.dim)),
+            h('td',{},dqRing(iss.dq,30,3)),
+            h('td',{},h('span',{style:{color:'var(--red)',fontSize:'11px',fontWeight:700}},iss.fail),h('span',{style:{color:'var(--text3)',fontSize:'11px'}},' / '+iss.tot)),
+            h('td',{},h('span',{style:{color:'var(--text2)',fontSize:'11px'}},iss.src)),
+            h('td',{},h('span',{className:'sts '+stsCls},iss.st.replace('_',' '))),
+            h('td',{},linked ? h('span',{style:{color:'var(--teal)',fontFamily:'var(--mono)',fontSize:'11px'}},linked.id) : h('span',{style:{color:'var(--text3)',fontSize:'11px'}},'—'))
+          );
+        }))
+      );
+      return tbl;
+    })())
+  );
+
+  return h('div',{},panel,avgPanel,issTable);
+}
+
+function renderAnalytics() {
+  const st = getStats();
+  // By source
+  const srcCard = h('div',{className:'ana-card'},h('div',{className:'ana-title'},'Exceptions by Source'));
+  const srcCounts = SOURCES.map(s=>({name:s,count:exceptions.filter(e=>e.source===s&&e.status!=='Closed').length,crit:exceptions.filter(e=>e.source===s&&e.severity==='critical'&&e.status!=='Closed').length}));
+  const maxC = Math.max(...srcCounts.map(x=>x.count),1);
+  srcCounts.forEach(({name,count,crit})=>{
+    srcCard.appendChild(h('div',{style:{display:'flex',alignItems:'center',gap:'12px',marginBottom:'10px'}},
+      h('span',{style:{fontSize:'11px',color:'var(--text2)',width:'130px',flexShrink:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},name),
+      h('div',{style:{flex:1,height:'16px',background:'rgba(51,65,85,.3)',borderRadius:'99px',overflow:'hidden',position:'relative'}},
+        h('div',{style:{height:'100%',borderRadius:'99px',background:'linear-gradient(90deg,#0d9488,#06b6d4)',width:(count/maxC*100)+'%',transition:'width .5s'}}),
+        crit>0?h('div',{style:{position:'absolute',right:'8px',top:0,height:'100%',display:'flex',alignItems:'center'}},h('span',{style:{color:'var(--red)',fontSize:'10px',fontWeight:700}},crit+' crit')):null
+      ),
+      h('span',{style:{fontSize:'11px',fontWeight:700,width:'24px',textAlign:'right',fontVariantNumeric:'tabular-nums',color:'#fff'}},count)
+    ));
+  });
+
+  // By category
+  const catCard = h('div',{className:'ana-card'},h('div',{className:'ana-title'},'Exceptions by DQ Dimension'),h('div',{className:'cat-g'}));
+  CATEGORIES.forEach((cat,i)=>{
+    const c = exceptions.filter(e=>e.category===cat&&e.status!=='Closed').length;
+    const cc = CAT_COLORS[i];
+    catCard.lastChild.appendChild(h('div',{className:'cat-c',style:{background:cc.bg,color:cc.c,border:'1px solid '+cc.bd}},
+      h('span',{},cat),h('span',{className:'cat-v'},c)
+    ));
+  });
+
+  // Integration coverage
+  const intCard = h('div',{className:'ana-card'},h('div',{className:'ana-title'},'Integration Coverage'));
+  const both = exceptions.filter(e=>e.jiraKey&&e.ataRef).length;
+  const none = exceptions.filter(e=>!e.jiraKey&&!e.ataRef).length;
+  [['DQ Engine Linked',st.ata,st.total,'linear-gradient(90deg,#6366f1,#8b5cf6)'],
+   ['JIRA Tickets Created',st.jira,st.total,'linear-gradient(90deg,#3b82f6,#2563eb)'],
+   ['Fully Tracked (Both)',both,st.total,'linear-gradient(90deg,#10b981,#14b8a6)'],
+   ['Unlinked Exceptions',none,st.total,'linear-gradient(90deg,#ef4444,#f43f5e)']
+  ].forEach(([label,val,tot,grad])=>{
+    intCard.appendChild(h('div',{className:'prg'},
+      h('div',{className:'prg-top'},h('span',{style:{color:'var(--text2)'}},label),h('span',{style:{color:'#fff',fontWeight:700}},val+' / '+tot)),
+      h('div',{className:'prg-trk'},h('div',{className:'prg-fill',style:{width:(val/tot*100)+'%',background:grad}}))
+    ));
+  });
+
+  // DQ scores by source
+  const dqCard = h('div',{className:'ana-card'},h('div',{className:'ana-title'},'DQ Scores by Source (Open Issues)'));
+  SOURCES.forEach(src=>{
+    const iss = exceptions.filter(e=>e.source===src&&e.ataDQ!=null&&e.status!=='Closed'&&e.status!=='Resolved');
+    const avg = iss.length ? iss.reduce((s,e)=>s+e.ataDQ,0)/iss.length : null;
+    dqCard.appendChild(h('div',{style:{display:'flex',alignItems:'center',gap:'12px',marginBottom:'10px'}},
+      h('span',{style:{fontSize:'11px',color:'var(--text2)',width:'130px',flexShrink:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},src),
+      avg!=null ? h('div',{style:{flex:1,height:'10px',background:'rgba(51,65,85,.3)',borderRadius:'99px',overflow:'hidden'}},
+        h('div',{style:{height:'100%',borderRadius:'99px',background:dqBg(avg),width:avg+'%',transition:'width .5s'}})
+      ) : null,
+      avg!=null ? h('span',{style:{fontSize:'11px',fontWeight:700,width:'48px',textAlign:'right',fontVariantNumeric:'tabular-nums',color:dqCol(avg)}},avg.toFixed(1)+'%') : h('span',{style:{color:'var(--text3)',fontSize:'11px'}},'No data')
+    ));
+  });
+
+  return h('div',{className:'ana-grid'},srcCard,catCard,intCard,dqCard);
+}
+
+// ── Modals ──
+function renderJiraModal() {
+  const e = exceptions.find(x=>x.id===state.jiraModalId); if(!e) return null;
+  const close = () => { state.jiraModalId=null; render(); };
+  const prio = e.severity==='critical'?'Highest':e.severity==='high'?'High':e.severity==='medium'?'Medium':'Low';
+  return h('div',{className:'modal-bg',onClick:close},
+    h('div',{className:'modal modal-lg',onClick:ev=>ev.stopPropagation()},
+      h('div',{className:'modal-hd'},
+        h('div',{style:{display:'flex',alignItems:'center',gap:'12px'}},
+          h('div',{style:{width:'32px',height:'32px',background:'#2563eb',borderRadius:'6px',display:'flex',alignItems:'center',justifyContent:'center'}},
+            h('span',{innerHTML:'<svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M11.53 2c0 2.4 1.97 4.35 4.35 4.35h1.78v1.7c0 2.4 1.94 4.34 4.34 4.35V2.84a.84.84 0 0 0-.84-.84h-9.63z"/><path d="M6.77 6.82a4.36 4.36 0 0 0 4.34 4.34h1.78v1.72a4.36 4.36 0 0 0 4.34 4.34V7.66a.84.84 0 0 0-.84-.84H6.77z"/><path d="M2 11.65c.02 2.4 1.96 4.34 4.34 4.34h1.78v1.72a4.35 4.35 0 0 0 4.35 4.29v-9.51a.84.84 0 0 0-.84-.84H2z"/></svg>'})
+          ),
+          h('div',{},h('div',{style:{color:'#fff',fontWeight:600,fontSize:'16px'}},'Create JIRA Issue'),h('div',{style:{color:'var(--text3)',fontSize:'12px'}},e.id+' → '+state.jiraCfg.projectKey))
+        ),
+        h('button',{className:'xbtn',onClick:close},'✕')
+      ),
+      h('div',{className:'modal-bd'},
+        h('div',{className:'frow'},
+          h('div',{},h('label',{className:'flbl'},'Project'),h('div',{className:'fld',style:{background:'rgba(51,65,85,.5)'}},state.jiraCfg.projectKey+' — EXF Data Quality')),
+          h('div',{},h('label',{className:'flbl'},'Priority'),h('div',{className:'fld',style:{background:'rgba(51,65,85,.5)'}},prio))
+        ),
+        h('div',{},h('label',{className:'flbl'},'Summary'),h('div',{className:'fld',style:{background:'rgba(51,65,85,.5)'}},'['+e.category+'] '+e.title)),
+        e.ataRef ? h('div',{className:'info-bx info-ind'},
+          h('div',{style:{fontWeight:500,marginBottom:'6px'}},'DQ Rule Traceability'),
+          h('div',{style:{marginBottom:'2px'}},'DQ Issue: ',h('span',{style:{fontFamily:'var(--mono)'}},e.ataRef)),
+          h('div',{style:{marginBottom:'2px'}},'DQ Rule: ',h('span',{style:{fontFamily:'var(--mono)'}},e.ataRule)),
+          h('div',{},'DQ Score: ',h('span',{style:{fontWeight:700,color:dqCol(e.ataDQ)}},e.ataDQ+'%'))
+        ) : null,
+        h('div',{},h('label',{className:'flbl'},'Description Preview'),
+          h('pre',{style:{background:'rgba(15,23,42,.5)',border:'1px solid var(--border)',borderRadius:'8px',padding:'12px',color:'var(--text2)',fontSize:'11px',maxHeight:'140px',overflowY:'auto',whiteSpace:'pre-wrap',fontFamily:'var(--mono)',lineHeight:1.6}},
+            'h2. Data Quality Exception: '+e.id+'\n*Source:* '+e.source+'\n*Fund:* '+e.fund+'\n*Severity:* '+e.severity.toUpperCase()+'\n*Records:* '+e.records+(e.ataRef?'\n*DQ Ref:* '+e.ataRef+' ('+e.ataRule+')':'')+'\n\nh3. Description\n'+e.desc
+          )
+        )
+      ),
+      h('div',{className:'modal-ft'},
+        h('button',{className:'btn',onClick:close},'Cancel'),
+        h('button',{className:'btn btn-blue',onClick:()=>{
+          const key = state.jiraCfg.projectKey+'-'+(4530+Math.floor(Math.random()*100));
+          const exc = exceptions.find(x=>x.id===state.jiraModalId);
+          if(exc){exc.jiraKey=key;exc.updated=new Date().toISOString();exc.comments.push({u:'System',t:'JIRA ticket '+key+' created',ts:new Date().toISOString()});}
+          state.jiraModalId=null;toast('JIRA ticket '+key+' created');
+        }},'Create Issue')
+      )
+    )
+  );
+}
+
+function renderAtaSyncModal() {
+  const e = exceptions.find(x=>x.id===state.ataSyncId); if(!e) return null;
+  const close = () => { state.ataSyncId=null; render(); };
+  let syncAction = 'update_status';
+  const actions = [
+    ['update_status','Update Issue Status','Sync current exception status to DQ engine'],
+    ['push_comments','Push Comments','Send all comments/activity log to DQ Engine'],
+    ['request_reeval','Request Re-evaluation','Trigger DQ re-evaluation for associated monitoring project'],
+    ['close_issue','Close DQ Issue','Mark the DQ Engine issue as resolved/closed']
+  ];
+  return h('div',{className:'modal-bg',onClick:close},
+    h('div',{className:'modal modal-sm',onClick:ev=>ev.stopPropagation()},
+      h('div',{className:'modal-hd'},
+        h('div',{style:{display:'flex',alignItems:'center',gap:'12px'}},
+          h('div',{style:{width:'32px',height:'32px',borderRadius:'6px',background:'linear-gradient(135deg,#6366f1,#8b5cf6)',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontWeight:700,fontSize:'10px'}},'DQ'),
+          h('div',{},h('div',{style:{color:'#fff',fontWeight:600,fontSize:'16px'}},'Sync DQ Status'),h('div',{style:{color:'var(--text3)',fontSize:'12px'}},e.id+' → '+(e.ataRef||'New')))
+        ),
+        h('button',{className:'xbtn',onClick:close},'✕')
+      ),
+      h('div',{className:'modal-bd'},
+        h('div',{style:{background:'rgba(15,23,42,.4)',border:'1px solid rgba(51,65,85,.3)',borderRadius:'8px',padding:'16px',display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px',fontSize:'11px'}},
+          h('div',{},h('span',{style:{color:'var(--text3)'}},'Exception'),h('div',{style:{color:'#fff',marginTop:'2px'}},e.id)),
+          h('div',{},h('span',{style:{color:'var(--text3)'}},'DQ Issue Ref'),h('div',{style:{color:'var(--indigo)',fontFamily:'var(--mono)',marginTop:'2px'}},e.ataRef||'—')),
+          h('div',{},h('span',{style:{color:'var(--text3)'}},'DQ Rule'),h('div',{style:{color:'#fff',fontFamily:'var(--mono)',marginTop:'2px'}},e.ataRule||'—')),
+          h('div',{},h('span',{style:{color:'var(--text3)'}},'Status'),h('div',{style:{marginTop:'4px'}},h('span',{className:stsClass(e.status)},e.status)))
+        ),
+        h('div',{},
+          h('label',{className:'flbl'},'Sync Action'),
+          h('div',{style:{display:'flex',flexDirection:'column',gap:'8px'}},
+            ...actions.map(([val,label,desc])=>{
+              const opt = h('label',{className:'radio-opt'+(syncAction===val?' sel':''),onClick:()=>{syncAction=val;document.querySelectorAll('.radio-opt').forEach(o=>o.classList.remove('sel'));opt.classList.add('sel');}},
+                h('input',{type:'radio',name:'sync',value:val,checked:syncAction===val?'checked':undefined}),
+                h('div',{},h('div',{style:{color:'#fff',fontSize:'13px',fontWeight:500}},label),h('div',{style:{color:'var(--text3)',fontSize:'11px',marginTop:'2px'}},desc))
+              );
+              return opt;
+            })
+          )
+        ),
+        h('div',{className:'info-bx info-ind'},
+          h('span',{style:{fontWeight:500}},'API: '),
+          h('span',{style:{fontFamily:'var(--mono)',fontSize:'10px'}},'POST '+'https://dq-engine.exf-data.com/api/v1/issues/'+(e.ataRef||'new')+'/sync')
+        )
+      ),
+      h('div',{className:'modal-ft'},
+        h('button',{className:'btn',onClick:close},'Cancel'),
+        h('button',{className:'btn btn-indigo',onClick:()=>{
+          const labels={update_status:'DQ status synced',push_comments:'Comments pushed to DQ engine',request_reeval:'DQ re-evaluation requested',close_issue:'DQ Engine issue closed'};
+          e.updated=new Date().toISOString();
+          e.comments.push({u:'System',t:labels[syncAction]||'DQ status synced',ts:new Date().toISOString()});
+          state.ataSyncId=null;toast(labels[syncAction]);
+        }},'Sync Now')
+      )
+    )
+  );
+}
+
+function renderConfigModal() {
+  if(!state.showConfig) return null;
+  const close=()=>{state.showConfig=false;render();};
+  const body = h('div',{className:'modal-bd'});
+  [['Base URL','baseUrl','https://your-org.atlassian.net'],['Project Key','projectKey','DATA'],['Email','email','you@example.com'],['API Token','apiToken','JIRA API token']].forEach(([lbl,key,ph])=>{
+    const inp=h('input',{className:'fld',type:key==='apiToken'?'password':'text',placeholder:ph,value:state.jiraCfg[key]});
+    inp.addEventListener('change',e=>{state.jiraCfg[key]=e.target.value;});
+    body.appendChild(h('div',{},h('label',{className:'flbl'},lbl),inp));
+  });
+  body.appendChild(h('div',{className:'info-bx info-amb'},'API tokens stored locally. In production, use OAuth 2.0 or a secure vault.'));
+  return h('div',{className:'modal-bg',onClick:close},
+    h('div',{className:'modal modal-sm',onClick:ev=>ev.stopPropagation()},
+      h('div',{className:'modal-hd'},
+        h('span',{style:{color:'#fff',fontWeight:600,fontSize:'16px'}},'JIRA Integration Settings'),
+        h('button',{className:'xbtn',onClick:close},'✕')
+      ),
+      body,
+      h('div',{className:'modal-ft'},
+        h('button',{className:'btn',onClick:close},'Cancel'),
+        h('button',{className:'btn btn-blue',onClick:close},'Save Configuration')
+      )
+    )
+  );
+}
+
+// ── Slide-over Detail ──
+function renderDetail() {
+  const e = exceptions.find(x=>x.id===state.selectedId); if(!e) return null;
+  const close = ()=>{state.selectedId=null;render();};
+  const ataIss = ATA_ISSUES.find(i=>i.id===e.ataRef);
+  const el = h('div',{className:'so-bg'},
+    h('div',{className:'so-dim',onClick:close}),
+    h('div',{className:'so'},
+      h('div',{className:'so-head'},
+        h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}},
+          h('div',{},
+            h('span',{style:{color:'var(--text3)',fontSize:'11px',fontFamily:'var(--mono)'}},e.id),
+            h('div',{style:{color:'#fff',fontWeight:600,fontSize:'16px',marginTop:'4px',lineHeight:1.25}},e.title)
+          ),
+          h('button',{className:'xbtn',onClick:close},'✕')
+        ),
+        h('div',{style:{display:'flex',gap:'8px',marginTop:'12px',flexWrap:'wrap'}},
+          h('span',{className:sevClass(e.severity)},e.severity),
+          h('span',{className:stsClass(e.status)},e.status),
+          e.jiraKey?h('span',{style:{fontSize:'11px',background:'var(--blue-dim)',color:'var(--blue)',border:'1px solid rgba(59,130,246,.3)',padding:'2px 8px',borderRadius:'4px',fontFamily:'var(--mono)'}},e.jiraKey):null,
+          e.ataRef?h('span',{style:{fontSize:'11px',background:'var(--indigo-dim)',color:'var(--indigo)',border:'1px solid rgba(99,102,241,.3)',padding:'2px 8px',borderRadius:'4px',fontFamily:'var(--mono)'}},e.ataRef):null
+        )
+      ),
+      h('div',{className:'so-body'},
+        // DQ info
+        e.ataRef ? h('div',{className:'ata-info'},
+          h('div',{style:{display:'flex',alignItems:'center',gap:'8px',marginBottom:'12px'}},
+            h('span',{className:'ata-icon'},'DQ'),
+            h('span',{style:{color:'var(--indigo)',fontSize:'10px',fontWeight:600,textTransform:'uppercase',letterSpacing:'.05em'}},'DQ Engine')
+          ),
+          h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'12px'}},
+            h('div',{style:{textAlign:'center'}},dqRing(e.ataDQ,48,4),h('div',{style:{color:'var(--text3)',fontSize:'11px',marginTop:'4px'}},'DQ Score')),
+            h('div',{},
+              h('span',{style:{color:'var(--text3)',fontSize:'10px'}},'Rule ID'),
+              h('div',{style:{color:'var(--indigo)',fontFamily:'var(--mono)',fontSize:'12px',marginTop:'2px'}},e.ataRule),
+              h('span',{style:{color:'var(--text3)',fontSize:'10px',marginTop:'8px',display:'block'}},'Issue Ref'),
+              h('div',{style:{color:'var(--indigo)',fontFamily:'var(--mono)',fontSize:'12px',marginTop:'2px'}},e.ataRef)
+            ),
+            h('div',{},
+              h('span',{style:{color:'var(--text3)',fontSize:'10px'}},'Dimension'),
+              h('div',{style:{color:'#fff',fontSize:'12px',marginTop:'2px'}},e.category),
+              h('span',{style:{color:'var(--text3)',fontSize:'10px',marginTop:'8px',display:'block'}},'Catalog Item'),
+              h('div',{style:{color:'#fff',fontSize:'12px',marginTop:'2px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},ataIss?ataIss.cat:'—')
+            )
+          ),
+          h('div',{style:{display:'flex',gap:'8px',marginTop:'12px'}},
+            h('button',{className:'btn btn-indigo btn-sm',style:{flex:1,justifyContent:'center'},onClick:()=>{state.ataSyncId=e.id;render();}},'Sync DQ Status'),
+            h('a',{href:'#',style:{fontSize:'11px',color:'var(--indigo)',padding:'4px 10px',display:'flex',alignItems:'center'}},'Open in DQ Portal ↗')
+          )
+        ) : null,
+
+        // Metadata
+        h('div',{className:'mgrid'},
+          ...['Source','Category','Fund','Assignee','Impacted Records','Created','Last Updated'].map((lbl,i)=>{
+            const vals=[e.source,e.category,e.fund,e.assignee||'Unassigned',e.records,fmtDate(e.created),fmtDate(e.updated)];
+            return h('div',{},h('span',{className:'mlbl'},lbl),h('div',{className:'mval'},vals[i]));
+          })
+        ),
+
+        // Description
+        h('div',{},
+          h('div',{style:{fontSize:'10px',fontWeight:500,textTransform:'uppercase',letterSpacing:'.05em',color:'var(--text3)',marginBottom:'8px'}},'Description'),
+          h('div',{style:{color:'var(--text)',fontSize:'13px',lineHeight:1.5,background:'rgba(15,23,42,.4)',border:'1px solid rgba(51,65,85,.3)',borderRadius:'8px',padding:'12px'}},e.desc)
+        ),
+
+        // Actions
+        h('div',{},
+          h('div',{style:{fontSize:'10px',fontWeight:500,textTransform:'uppercase',letterSpacing:'.05em',color:'var(--text3)',marginBottom:'8px'}},'Actions'),
+          h('div',{style:{display:'flex',flexWrap:'wrap',gap:'8px'}},
+            e.status!=='Closed'&&e.status!=='Resolved' ? (()=>{
+              const sel=h('select',{className:'f-select',style:{fontSize:'11px',padding:'4px 8px'}});
+              sel.innerHTML='<option value="" disabled selected>Change Status...</option>'+STATUSES.filter(s=>s!==e.status).map(s=>'<option value="'+s+'">'+s+'</option>').join('');
+              sel.addEventListener('change',ev=>{if(ev.target.value){e.status=ev.target.value;e.updated=new Date().toISOString();e.comments.push({u:'J. Koerber',t:'Status changed to '+ev.target.value,ts:new Date().toISOString()});render();}});
+              return sel;
+            })() : null,
+            e.status!=='Closed'&&e.status!=='Resolved'&&!e.jiraKey ? h('button',{className:'btn btn-sm',style:{fontSize:'11px'},onClick:()=>{state.jiraModalId=e.id;render();}},'Create JIRA Issue') : null,
+            e.jiraKey?h('span',{style:{fontSize:'11px',color:'var(--text3)',padding:'4px 8px',display:'flex',alignItems:'center'}},'→ '+e.jiraKey):null
+          )
+        ),
+
+        // Activity
+        h('div',{},
+          h('div',{style:{fontSize:'10px',fontWeight:500,textTransform:'uppercase',letterSpacing:'.05em',color:'var(--text3)',marginBottom:'12px'}},'Activity Log ('+e.comments.length+')'),
+          ...e.comments.map(c=>
+            h('div',{className:'cmt'},
+              h('div',{className:'cmt-av '+(c.u==='System'?'cmt-sys':c.u==='DQ Engine'?'cmt-ata':'cmt-usr')},
+                c.u==='System'?'⚙':c.u==='DQ Engine'?'DQ':c.u[0]
+              ),
+              h('div',{style:{flex:1,minWidth:0}},
+                h('div',{style:{display:'flex',alignItems:'center',gap:'8px'}},
+                  h('span',{style:{color:'#fff',fontSize:'11px',fontWeight:500}},c.u),
+                  h('span',{style:{color:'var(--text3)',fontSize:'11px'}},timeAgo(c.ts))
+                ),
+                h('div',{style:{color:'var(--text2)',fontSize:'12px',marginTop:'3px'}},c.t)
+              )
+            )
+          ),
+          (()=>{
+            const inp=h('input',{className:'fld',style:{flex:1},placeholder:'Add a comment...'});
+            const post=()=>{
+              if(inp.value.trim()){
+                e.comments.push({u:'J. Koerber',t:inp.value.trim(),ts:new Date().toISOString()});
+                e.updated=new Date().toISOString();
+                render();
+              }
+            };
+            inp.addEventListener('keydown',ev=>{if(ev.key==='Enter')post();});
+            return h('div',{style:{display:'flex',gap:'8px',marginTop:'4px'}},
+              inp,
+              h('button',{className:'btn btn-teal btn-sm',onClick:post},'Post')
+            );
+          })()
+        )
+      )
+    )
+  );
+  return el;
+}
+
+// ── Import Issues ──
+function importIssues(projId) {
+  const existing = new Set(exceptions.map(e=>e.ataRef));
+  const newIss = ATA_ISSUES.filter(i=>i.proj===projId&&!existing.has(i.id));
+  if(!newIss.length){toast('All issues already imported');return;}
+  newIss.forEach((iss,idx)=>{
+    exceptions.push({
+      id:'DQE-'+(1011+exceptions.length+idx),
+      title:iss.rule+': '+iss.desc.slice(0,60)+'...',
+      category:iss.dim,source:iss.src,severity:iss.sev,
+      status:iss.st==='open'?'Open':iss.st==='in_progress'?'In Progress':iss.st==='escalated'?'Escalated':iss.st==='resolved'?'Resolved':'Closed',
+      assignee:null,created:iss.det,updated:new Date().toISOString(),fund:'—',
+      jiraKey:null,ataRef:iss.id,ataDQ:iss.dq,ataRule:iss.ruleId,
+      desc:iss.desc,records:iss.fail,
+      comments:[
+        {u:'DQ Engine',t:'DQ rule '+iss.ruleId+' ('+iss.rule+') — '+iss.fail+'/'+iss.tot+' records failed. Score: '+iss.dq+'%',ts:iss.det},
+        {u:'System',t:'Imported from DQ monitoring project: '+(PROJECTS.find(p=>p.id===projId)||{}).name,ts:new Date().toISOString()}
+      ]
+    });
+  });
+  toast('Imported '+newIss.length+' issues from DQ Engine');
+}
+
+// ── Main Render ──
+function render() {
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+  app.appendChild(renderHeader());
+  const main = h('div',{style:{maxWidth:'1600px',margin:'0 auto',padding:'24px'}});
+  main.appendChild(renderStats());
+  main.appendChild(renderTabNav());
+
+  if(state.activeTab==='exceptions'){
+    main.appendChild(renderFilters());
+    main.appendChild(state.view==='table'?renderTable():renderBoard());
+  } else if(state.activeTab==='monitoring'){
+    main.appendChild(renderMonitoring());
+  } else {
+    main.appendChild(renderAnalytics());
+  }
+  app.appendChild(main);
+
+  // Overlays
+  if(state.selectedId) app.appendChild(renderDetail());
+  const jm = renderJiraModal(); if(jm) app.appendChild(jm);
+  const am = renderAtaSyncModal(); if(am) app.appendChild(am);
+  const cm = renderConfigModal(); if(cm) app.appendChild(cm);
+  if(state.toastMsg) app.appendChild(h('div',{className:'toast'},h('span',{style:{fontSize:'16px'}},'✓'),state.toastMsg));
+}
+
+render();
+</script>
+</body>
+</html>
